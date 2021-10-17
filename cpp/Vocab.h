@@ -3,6 +3,9 @@
 
 #include "common_define.h"
 
+#include <unordered_map>
+#include <string>
+
 struct vocab_word_t
 {
   long long cn; //frequency of word
@@ -29,7 +32,6 @@ private:
   void loadFromTrainFile(const char * train_file);
   long long addWordToVocab(const char *word);
   void sortVocab();
-  void reduceVocab();
   void createHuffmanTree();
 
 public:
@@ -42,8 +44,7 @@ public:
 private:
   long long m_vocab_capacity;
   //index: hash code of a word, value: vocab index of the word
-  int *m_vocab_hash;
-  int m_min_reduce;
+  std::unordered_map<std::string, size_t> m_vocab_hash;
   int m_min_count;
   bool m_doctag;
 };
