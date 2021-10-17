@@ -1,5 +1,5 @@
 # doc2vec
-C++ implement of Tomas Mikolov's word/document embedding. You may want to feel the basic idea from Mikolov's two orignal papers, [word2vec](http://arxiv.org/pdf/1301.3781.pdf) and [doc2vec](http://cs.stanford.edu/~quocle/paragraph_vector.pdf). More recently, Andrew M. Dai etc from Google reported its power in more [detail](http://arxiv.org/pdf/1507.07998.pdf)
+C++ implement of Tomas Mikolov's word/document embedding. You may want to feel the basic idea from Mikolov's two orignal papers, [word2vec](http://arxiv.org/pdf/1301.3781.pdf) and [doc2vec](http://cs.stanford.edu/~quocle/paragraph_vector.pdf). More recently, Andrew M. Dai etc. from Google reported its power in more [detail](http://arxiv.org/pdf/1507.07998.pdf)
 
 ## Dependencies
 * g++ </br>
@@ -8,14 +8,14 @@ C++ implement of Tomas Mikolov's word/document embedding. You may want to feel t
 ## Why did I rewrite it in C++?
 There are a few pretty nice projects like [google's word2vec](https://code.google.com/p/word2vec/) and [gensim](https://github.com/piskvorky/gensim) has already implemented the algorithm, from which I learned quite a lot. However, I rewrite it for following reasons:</br>
 
-* speed. I believe c/c++ version has the best speed on CPU. In fact, according to test on same machine and runing with same setting, Fully optimized gensim verison got ~100K words/s, whereas c++ version achieved 200K words/s </br>
+* speed. I believe c/c++ version has the best speed on CPU. In fact, according to test on same machine and running with same setting, Fully optimized gensim version got ~100K words/s, whereas c++ version achieved 200K words/s </br>
 
-* functionality. After I awared the advantage of c/c++ in term of efficiency, I found few c/c++ project implements both word and document embedding. Moreover, some important application for these embedding have not been fully developed, such as online infer document, [likelihood of document](http://arxiv.org/abs/1504.07295), [wmd](jmlr.org/proceedings/papers/v37/kusnerb15.pdf) and keyword extraction </br>
+* functionality. After I became aware of the advantage of c/c++ in terms of efficiency, I found few c/c++ project implements both word and document embedding. Moreover, some important application for these embedding have not been fully developed, such as online document inference, [likelihood of document](http://arxiv.org/abs/1504.07295), [wmd](jmlr.org/proceedings/papers/v37/kusnerb15.pdf) and keyword extraction </br>
 
 * scalability. I found that it's extremely slow when doing task like "most similar" on large data. One straight-forward way is distributing, the other is putting on GPUs. For these purposes, I prefer to design data structrue by myself
 
 ## Getting started
-I lauched an expriment on 7,987,287 chinese academic papers' title, which has ~8 words on average. </br>
+I launched an expriment on 7,987,287 chinese academic papers' title, which has ~8 words on average. </br>
 Following will show you some of the result and how-to </br>
 
 prepare trainning file in format like this: </br>
@@ -28,7 +28,7 @@ prepare trainning file in format like this: </br>
 train model: </br>
 
     Doc2Vec doc2vec;
-    doc2vec.train("path-to-taining-file", 50, 0, 1, 0, 15, 10, 0.025, 1e-5, 3, 6);
+    doc2vec.train("path-to-training-file", 50, 0, 1, 0, 15, 10, 0.025, 1e-5, 3, 6);
 
 save model if you want: </br>
 
@@ -127,9 +127,9 @@ somthing more interesting is that task of keyword extraction could also benefit 
     方法 -> -535.65
     中 -> -577.80
 
-further more, I use these word weights to modify the [wmd](jmlr.org/proceedings/papers/v37/kusnerb15.pdf), impoving performance of document similarity:
+furthermore, I use these word weights to modify the [wmd](jmlr.org/proceedings/papers/v37/kusnerb15.pdf), improving performance of document similarity:
 
-    //the bad case methioned above turned to be acceptable
+    //the bad case mentioned above turned to be acceptable
     doc.m_word_num = 6;
     buildDoc(&doc, "遥感信息", "发展战略", "与", "对策", "</s>");
     doc2vec.wmd()->sent_knn_docs_ex(&doc, knn_items, K);
