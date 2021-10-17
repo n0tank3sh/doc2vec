@@ -1,5 +1,5 @@
 #include "TaggedBrownCorpus.h"
-#include "Vocab.h"
+#include "Vocabulary.h"
 #include "NN.h"
 #include "Doc2Vec.h"
 #include <set>

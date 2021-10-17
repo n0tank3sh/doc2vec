@@ -1,7 +1,7 @@
 #include "TrainModelThread.h"
 #include "Doc2Vec.h"
 #include "TaggedBrownCorpus.h"
-#include "Vocab.h"
+#include "Vocabulary.h"
 #include "NN.h"
 
 TrainModelThread::TrainModelThread(long long id, Doc2Vec * doc2vec,

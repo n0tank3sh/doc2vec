@@ -1,6 +1,6 @@
 #include "Doc2Vec.h"
 #include "NN.h"
-#include "Vocab.h"
+#include "Vocabulary.h"
 #include "WMD.h"
 #include "TrainModelThread.h"
 #include "TaggedBrownCorpus.h"

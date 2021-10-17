@@ -1,4 +1,4 @@
-#include "Vocab.h"
+#include "Vocabulary.h"
 #include "TaggedBrownCorpus.h"
 
 static int vocabCompare(const void *a, const void *b);
