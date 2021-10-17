@@ -68,7 +68,7 @@ void Doc2Vec::train(const char * train_file,
   real alpha, real sample,
   int min_count, int threads)
 {
-  printf("Starting training using file %s\n", train_file);
+  fprintf(stderr, "Starting training using file %s\n", train_file);
   m_cbow = cbow;
   m_hs = hs;
   m_negtive = negtive;
@@ -87,7 +87,7 @@ void Doc2Vec::train(const char * train_file,
   m_word_count_actual = 0;
   initTrainModelThreads(train_file, threads, iter);
 
-  printf("Train with %d threads\n", (int)m_trainModelThreads.size());
+  fprintf(stderr, "Train with %d threads\n", (int)m_trainModelThreads.size());
   pthread_t *pt = (pthread_t *)malloc(m_trainModelThreads.size() * sizeof(pthread_t));
   for(size_t a = 0; a < m_trainModelThreads.size(); a++) {
     pthread_create(&pt[a], NULL, trainModelThread, (void *)m_trainModelThreads[a]);
@@ -131,7 +131,7 @@ void Doc2Vec::initTrainModelThreads(const char * train_file, int threads, int it
     model_thread = new TrainModelThread(m_trainModelThreads.size(), this, sub_c, false);
     m_trainModelThreads.push_back(model_thread);
   }
-  printf("corpus size: %lld\n", m_doc_vocab->m_vocab_size - 1);
+  fprintf(stderr, "corpus size: %lld\n", m_doc_vocab->m_vocab_size - 1);
   return;
 }
 

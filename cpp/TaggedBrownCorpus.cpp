@@ -13,7 +13,7 @@ TaggedBrownCorpus::TaggedBrownCorpus(const char * train_file, long long seek, lo
   m_fin = fopen(train_file, "rb");
   if (m_fin == NULL)
   {
-    printf("ERROR: training data file not found!\n");
+    fprintf(stderr, "ERROR: training data file not found!\n");
     exit(1);
   }
   fseek(m_fin, m_seek, SEEK_SET);

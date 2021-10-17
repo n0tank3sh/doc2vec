@@ -59,8 +59,8 @@ void Vocabulary::loadFromTrainFile(const char * train_file)
         m_train_words++;
         if (!m_doctag && m_train_words % 100000 == 0)
         {
-          printf("%lldK%c", m_train_words / 1000, 13);
-          fflush(stdout);
+          fprintf(stderr, "%lldK%c", m_train_words / 1000, 13);
+          fflush(stderr);
         }
         i = searchVocab(word);
         if (i == -1) {
@@ -74,8 +74,8 @@ void Vocabulary::loadFromTrainFile(const char * train_file)
   if(!m_doctag)
   {
     sortVocab();
-    printf("Vocab size: %lld\n", m_vocab_size);
-    printf("Words in train file: %lld\n", m_train_words);
+    fprintf(stderr, "Vocab size: %lld\n", m_vocab_size);
+    fprintf(stderr, "Words in train file: %lld\n", m_train_words);
   }
 }
 
