@@ -9,8 +9,12 @@ NN::NN(long long vocab_size, long long corpus_size, long long dim,
 {
   long long a, b;
   unsigned long long next_random = 1;
+  m_syn0 = NULL;
+  
   a = posix_memalign((void **)&m_syn0, 128, (long long)m_vocab_size * m_dim * sizeof(real));
   if (m_syn0 == NULL) {printf("Memory allocation failed\n"); exit(1);}
+
+  m_dsyn0 = NULL;
   a = posix_memalign((void **)&m_dsyn0, 128, (long long)m_corpus_size * m_dim * sizeof(real));
   if (m_dsyn0 == NULL) {printf("Memory allocation failed\n"); exit(1);}
   for (a = 0; a < m_vocab_size; a++) for (b = 0; b < m_dim; b++) {
@@ -22,6 +26,8 @@ NN::NN(long long vocab_size, long long corpus_size, long long dim,
     m_dsyn0[a * m_dim + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / m_dim;
   }
 
+  m_syn1 = NULL;
+  m_syn1neg = NULL;
   if(m_hs) {
     a = posix_memalign((void **)&m_syn1, 128, (long long)m_vocab_size * m_dim * sizeof(real));
     if (m_syn1 == NULL) {printf("Memory allocation failed\n"); exit(1);}
@@ -73,6 +79,8 @@ void NN::load(FILE * fin)
   if (m_dsyn0 == NULL) {printf("Memory allocation failed\n"); exit(1);}
   fread(m_dsyn0, sizeof(real), m_corpus_size * m_dim, fin);
 
+  m_syn1 = NULL;
+  m_syn1neg = NULL;
   if(m_hs) {
     posix_memalign((void **)&m_syn1, 128, (long long)m_vocab_size * m_dim * sizeof(real));
     if (m_syn1 == NULL) {printf("Memory allocation failed\n"); exit(1);}

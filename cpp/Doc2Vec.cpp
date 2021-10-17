@@ -30,7 +30,7 @@ Doc2Vec::~Doc2Vec()
   if(m_brown_corpus) delete m_brown_corpus;
   if(m_expTable) free(m_expTable);
   if(m_negtive_sample_table) free(m_negtive_sample_table);
-  for(size_t i =  0; i < m_trainModelThreads.size(); i++) delete m_trainModelThreads[i];
+  // for(size_t i =  0; i < m_trainModelThreads.size(); i++) delete m_trainModelThreads[i];
 }
 
 void Doc2Vec::initExpTable()
@@ -95,6 +95,10 @@ void Doc2Vec::train(const char * train_file,
   for (size_t a = 0; a < m_trainModelThreads.size(); a++) pthread_join(pt[a], NULL);
   free(pt);
 
+  for(size_t i =  0; i < m_trainModelThreads.size(); i++) m_trainModelThreads[i]->m_corpus->close();
+  for(size_t i =  0; i < m_trainModelThreads.size(); i++) delete m_trainModelThreads[i];
+  m_brown_corpus->close();
+  
   m_nn->norm();
   m_wmd = new WMD(this);
   m_wmd->train();
@@ -303,7 +307,7 @@ void Doc2Vec::load(FILE * fin)
 long long Doc2Vec::dim() {return m_nn->m_dim;}
 WMD * Doc2Vec::wmd() {return m_wmd;}
 Vocabulary* Doc2Vec::wvocab() {return m_word_vocab;}
-Vocabulary* Doc2Vec::dvocab() {return m_doc_vocab;};
+Vocabulary* Doc2Vec::dvocab() {return m_doc_vocab;}
 NN * Doc2Vec::nn() {return m_nn;};
 /////==============================DOC2VEC end========================
 

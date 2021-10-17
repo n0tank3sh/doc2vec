@@ -21,7 +21,8 @@ TaggedBrownCorpus::TaggedBrownCorpus(const char * train_file, long long seek, lo
 
 TaggedBrownCorpus::~TaggedBrownCorpus()
 {
-  fclose(m_fin);
+  if(m_fin != NULL) fclose(m_fin);
+  m_fin = NULL;
 }
 
 void TaggedBrownCorpus::rewind()
@@ -125,7 +126,7 @@ UnWeightedDocument::UnWeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
 
 UnWeightedDocument::~UnWeightedDocument()
 {
-  if(m_words_idx) delete [] m_words_idx;
+  delete [] m_words_idx;
 }
 
 void UnWeightedDocument::save(FILE * fout)
@@ -148,12 +149,16 @@ void UnWeightedDocument::load(FILE * fin)
 WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
   UnWeightedDocument(doc2vec, doc), m_words_wei(NULL)
 {
+  m_words_wei = NULL;
+  
   int a;
   long long word_idx;
   char * word;
   real sim, * doc_vector = NULL, * infer_vector = NULL;
   real sum = 0;
   std::map<long long, real> scores;
+  doc_vector = NULL;
+  infer_vector = NULL;  
   posix_memalign((void **)&doc_vector, 128, doc2vec->m_nn->m_dim * sizeof(real));
   posix_memalign((void **)&infer_vector, 128, doc2vec->m_nn->m_dim * sizeof(real));
   doc2vec->infer_doc(doc, doc_vector);
@@ -178,5 +183,5 @@ WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
 
 WeightedDocument::~WeightedDocument()
 {
-  if(m_words_wei) delete [] m_words_wei;
+  delete [] m_words_wei;
 }
