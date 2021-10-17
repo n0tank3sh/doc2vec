@@ -28,7 +28,7 @@ Vocabulary::~Vocabulary()
 }
 
 // Returns position of a word in the vocabulary; if the word is not found, returns -1
-long long Vocabulary::searchVocab(const char *word)
+long long Vocabulary::searchVocab(const char *word) const
 {
   auto it = m_vocab_hash.find(word);
   if (it != m_vocab_hash.end()) return it->second;
@@ -207,7 +207,7 @@ void Vocabulary::createHuffmanTree()
   free(parent_node);
 }
 
-void Vocabulary::save(FILE * fout)
+void Vocabulary::save(FILE * fout) const
 {
   long long a;
   int wordlen;

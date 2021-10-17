@@ -50,7 +50,7 @@ NN::~NN()
   if(m_dsyn0norm) free(m_dsyn0norm);
 }
 
-void NN::save(FILE * fout)
+void NN::save(FILE * fout) const
 {
   fwrite(&m_hs, sizeof(int), 1, fout);
   fwrite(&m_negtive, sizeof(int), 1, fout);

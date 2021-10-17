@@ -14,7 +14,7 @@ public:
   WMD(Doc2Vec * doc2vec);
   ~WMD();
   void train();
-  void save(FILE * fout);
+  void save(FILE * fout) const;
   void load(FILE * fin);
   real rwmd(WeightedDocument * src, UnWeightedDocument * target);
   void sent_knn_docs(TaggedDocument * doc, knn_item_t * knns, int k);

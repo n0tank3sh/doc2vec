@@ -45,7 +45,7 @@ public:
   real distance(real * src, real * target);
 
 public:
-  void save(FILE * fout);
+  void save(FILE * fout) const;
   void load(FILE * fin);
 private:
   void initExpTable();

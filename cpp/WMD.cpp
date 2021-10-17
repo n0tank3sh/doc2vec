@@ -31,7 +31,7 @@ void WMD::train()
   loadFromDoc2Vec();
 }
 
-void WMD::save(FILE * fout)
+void WMD::save(FILE * fout) const
 {
   for(long long a = 0; a < m_doc2vec->m_nn->m_corpus_size; a++) m_corpus[a]->save(fout);
 }

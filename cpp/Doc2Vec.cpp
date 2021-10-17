@@ -268,7 +268,7 @@ real Doc2Vec::context_likelihood(TaggedDocument * doc, int sentence_position)
   return trainThread.context_likelihood(sent_pos);
 }
 
-void Doc2Vec::save(FILE * fout)
+void Doc2Vec::save(FILE * fout) const
 {
   m_word_vocab->save(fout);
   m_doc_vocab->save(fout);

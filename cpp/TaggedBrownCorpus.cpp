@@ -129,7 +129,7 @@ UnWeightedDocument::~UnWeightedDocument()
   delete [] m_words_idx;
 }
 
-void UnWeightedDocument::save(FILE * fout)
+void UnWeightedDocument::save(FILE * fout) const
 {
   fwrite(&m_word_num, sizeof(int), 1, fout);
   if(m_word_num > 0) fwrite(m_words_idx, sizeof(long long), m_word_num, fout);

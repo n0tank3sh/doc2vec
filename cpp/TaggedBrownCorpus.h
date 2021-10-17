@@ -24,7 +24,7 @@ public:
 public:
   TaggedDocument * next();
   void rewind();
-  long long getDocNum() {return m_doc_num;}
+  long long getDocNum() const {return m_doc_num;}
   long long tell() {return ftell(m_fin);}
   void close() {fclose(m_fin);m_fin=NULL;}
 
@@ -50,7 +50,7 @@ public:
   virtual ~UnWeightedDocument();
 
 public:
-  void save(FILE * fout);
+  void save(FILE * fout) const;
   void load(FILE * fin);
 public:
   long long * m_words_idx;

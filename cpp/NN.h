@@ -9,7 +9,7 @@ public:
   NN(long long vocab_size, long long corpus_size, long long dim, int hs, int negtive);
   ~NN();
 public:
-  void save(FILE * fout);
+  void save(FILE * fout) const;
   void load(FILE * fin);
   void norm();
 public:
