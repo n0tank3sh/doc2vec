@@ -8,7 +8,7 @@
 
 struct vocab_word_t
 {
-  long long cn; //frequency of word
+  size_t cn; //frequency of word
   int *point; //Huffman tree(n leaf + n inner node, exclude root) path. (root, leaf], node index
   char *word; //word string
   char *code; //Huffman code. (root, leaf], 0/1 codes
@@ -38,11 +38,11 @@ public:
   //first place is <s>, others sorted by its frequency reversely
   struct vocab_word_t* m_vocab;
   //size of vocab including <s>
-  long long m_vocab_size;
+  size_t m_vocab_size;
   //total words of corpus. ie. sum up all frequency of words(exculude <s>)
-  long long m_train_words;
+  size_t m_train_words;
 private:
-  long long m_vocab_capacity;
+  size_t m_vocab_capacity;
   //index: hash code of a word, value: vocab index of the word
   std::unordered_map<std::string, size_t> m_vocab_hash;
   int m_min_count;

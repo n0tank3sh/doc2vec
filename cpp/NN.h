@@ -6,7 +6,7 @@ class NN
 {
 public:
   NN() : m_syn0(NULL), m_dsyn0(NULL), m_syn1(NULL), m_syn1neg(NULL),m_syn0norm(NULL), m_dsyn0norm(NULL)  {}
-  NN(long long vocab_size, long long corpus_size, long long dim, int hs, int negtive);
+  NN(size_t vocab_size, size_t corpus_size, size_t dim, int hs, int negtive);
   ~NN();
 public:
   void save(FILE * fout) const;

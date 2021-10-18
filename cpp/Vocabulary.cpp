@@ -90,7 +90,7 @@ long long Vocabulary::addWordToVocab(const std::string & word)
   {
     m_vocab_capacity += 1000;
     m_vocab = (struct vocab_word_t *)realloc(m_vocab, m_vocab_capacity * sizeof(struct vocab_word_t));
-    for(long long a = m_vocab_size+1; a < m_vocab_capacity; a++){
+    for(size_t a = m_vocab_size+1; a < m_vocab_capacity; a++){
       m_vocab[a].word = NULL;
       m_vocab[a].point = NULL;
       m_vocab[a].code = NULL;
@@ -104,14 +104,13 @@ long long Vocabulary::addWordToVocab(const std::string & word)
 void Vocabulary::sortVocab()
 {
   assert(m_vocab_size > 0);
-  int a, size;
   // Sort the vocabulary and keep </s> at the first position
   qsort(&m_vocab[1], m_vocab_size - 1, sizeof(struct vocab_word_t), vocabCompare);
   //reduce words and re-hash
   m_vocab_hash.clear();
-  size = m_vocab_size;
+  size_t size = m_vocab_size;
   m_train_words = 0;
-  for (a = 0; a < size; a++)
+  for (size_t a = 0; a < size; a++)
   {
     // Words occuring less than min_count times will be discarded from the vocab
     if (m_vocab[a].cn < m_min_count)
@@ -213,7 +212,7 @@ void Vocabulary::save(FILE * fout) const
   fwrite(&m_vocab_capacity, sizeof(long long), 1, fout);
   fwrite(&m_min_count, sizeof(int), 1, fout);
   fwrite(&m_doctag, sizeof(bool), 1, fout);
-  for(long long a = 0; a < m_vocab_size; a++)
+  for(size_t a = 0; a < m_vocab_size; a++)
   {
     int wordlen;
     wordlen = strlen(m_vocab[a].word);
@@ -237,7 +236,7 @@ void Vocabulary::load(FILE * fin)
   fread(&m_min_count, sizeof(int), 1, fin);
   fread(&m_doctag, sizeof(bool), 1, fin);
   m_vocab = (struct vocab_word_t *)calloc(m_vocab_capacity, sizeof(struct vocab_word_t));
-  for(long long a = 0; a < m_vocab_size; a++)
+  for(size_t a = 0; a < m_vocab_size; a++)
   {
     int wordlen;
     fread(&wordlen, sizeof(int), 1, fin);

@@ -1,6 +1,6 @@
 #include "NN.h"
 
-NN::NN(long long vocab_size, long long corpus_size, long long dim,
+NN::NN(size_t vocab_size, size_t corpus_size, size_t dim,
   int hs, int negtive):
   m_hs(hs), m_negtive(negtive),
   m_syn0(NULL), m_dsyn0(NULL), m_syn1(NULL), m_syn1neg(NULL),
