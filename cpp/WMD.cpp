@@ -83,18 +83,14 @@ void WMD::sent_knn_docs(TaggedDocument * doc, knn_item_t * knns, int k)
 
 void WMD::sent_knn_docs_ex(TaggedDocument * doc, knn_item_t * knns, int k)
 {
-  real * m_infer_vector = 0;
-  posix_memalign((void **)&m_infer_vector, 128, m_doc2vec->m_nn->m_dim * sizeof(real));
-
-  m_doc2vec->sent_knn_docs(doc, m_doc2vec_knns, MAX_DOC2VEC_KNN, m_infer_vector);
+  m_doc2vec->sent_knn_docs(doc, m_doc2vec_knns, MAX_DOC2VEC_KNN);
   
-  long long b, c, idx;
   UnWeightedDocument * target;
   WeightedDocument src(m_doc2vec, doc);
   top_init(knns, k);
-  for(b = 0, c = 0; b < MAX_DOC2VEC_KNN; b++)
+  for(long long b = 0, c = 0; b < MAX_DOC2VEC_KNN; b++)
   {
-    idx = m_doc2vec_knns[b].idx;
+    long long idx = m_doc2vec_knns[b].idx;
     target = m_corpus[idx];
     if(target)
     {
@@ -108,9 +104,7 @@ void WMD::sent_knn_docs_ex(TaggedDocument * doc, knn_item_t * knns, int k)
     }
   }
   top_sort(knns, k);
-  for(b = 0; b < k; b++) knns[b].word = m_doc2vec->m_doc_vocab->m_vocab[knns[b].idx].word;
-
-  free(m_infer_vector);
+  for(long long b = 0; b < k; b++) knns[b].word = m_doc2vec->m_doc_vocab->m_vocab[knns[b].idx].word;
 }
 
 real WMD::rwmd(WeightedDocument * src, UnWeightedDocument * target)
