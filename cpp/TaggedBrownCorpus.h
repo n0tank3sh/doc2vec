@@ -11,8 +11,8 @@ class Doc2Vec;
 class TaggedDocument
 {
 public:
-  TaggedDocument();
-  ~TaggedDocument();
+  TaggedDocument() { }
+  TaggedDocument(const std::vector<std::string> & words) : m_words(words) { }
 
   void clear() {
     m_tag.clear();

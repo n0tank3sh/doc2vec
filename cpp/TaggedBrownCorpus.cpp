@@ -85,16 +85,6 @@ int TaggedBrownCorpus::readWord(std::string & word)
   return 0;
 }
 
-//=======================TaggedDocument=======================
-TaggedDocument::TaggedDocument()
-{
-
-}
-
-TaggedDocument::~TaggedDocument()
-{
-}
-
 // //////////////UnWeightedDocument/////////////////////////////
 UnWeightedDocument::UnWeightedDocument() : m_words_idx(NULL), m_word_num(0) {}
 
