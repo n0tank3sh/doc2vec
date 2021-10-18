@@ -1,6 +1,8 @@
 #include "Vocabulary.h"
 #include "TaggedBrownCorpus.h"
 
+#include <cassert>
+
 static int vocabCompare(const void *a, const void *b);
 
 Vocabulary::Vocabulary(const char * train_file, int min_count, bool doctag) :
@@ -102,6 +104,7 @@ long long Vocabulary::addWordToVocab(const std::string & word)
 // Sorts the vocabulary by frequency using word counts, frequent->infrequent
 void Vocabulary::sortVocab()
 {
+  assert(m_vocab_size > 0);
   int a, size;
   // Sort the vocabulary and keep </s> at the first position
   qsort(&m_vocab[1], m_vocab_size - 1, sizeof(struct vocab_word_t), vocabCompare);
@@ -115,12 +118,12 @@ void Vocabulary::sortVocab()
     if (m_vocab[a].cn < m_min_count)
     {
       m_vocab_size--;
-      free(m_vocab[m_vocab_size].word);
-      m_vocab[m_vocab_size].word = NULL;
-      free(m_vocab[m_vocab_size].point);
-      m_vocab[m_vocab_size].point = NULL;
-      free(m_vocab[m_vocab_size].code);
-      m_vocab[m_vocab_size].code = NULL;
+      free(m_vocab[a].word);
+      m_vocab[a].word = NULL;
+      free(m_vocab[a].point);
+      m_vocab[a].point = NULL;
+      free(m_vocab[a].code);
+      m_vocab[a].code = NULL;
     }
     else
     {
@@ -206,15 +209,14 @@ void Vocabulary::createHuffmanTree()
 
 void Vocabulary::save(FILE * fout) const
 {
-  long long a;
-  int wordlen;
   fwrite(&m_vocab_size, sizeof(long long), 1, fout);
   fwrite(&m_train_words, sizeof(long long), 1, fout);
   fwrite(&m_vocab_capacity, sizeof(long long), 1, fout);
   fwrite(&m_min_count, sizeof(int), 1, fout);
   fwrite(&m_doctag, sizeof(bool), 1, fout);
-  for(a = 0; a < m_vocab_size; a++)
+  for(long long a = 0; a < m_vocab_size; a++)
   {
+    int wordlen;
     wordlen = strlen(m_vocab[a].word);
     fwrite(&wordlen, sizeof(int), 1, fout);
     fwrite(m_vocab[a].word, sizeof(char), wordlen, fout);
@@ -230,16 +232,15 @@ void Vocabulary::save(FILE * fout) const
 
 void Vocabulary::load(FILE * fin)
 {
-  long long a;
-  int wordlen;
   fread(&m_vocab_size, sizeof(long long), 1, fin);
   fread(&m_train_words, sizeof(long long), 1, fin);
   fread(&m_vocab_capacity, sizeof(long long), 1, fin);
   fread(&m_min_count, sizeof(int), 1, fin);
   fread(&m_doctag, sizeof(bool), 1, fin);
   m_vocab = (struct vocab_word_t *)calloc(m_vocab_capacity, sizeof(struct vocab_word_t));
-  for(a = 0; a < m_vocab_size; a++)
+  for(long long a = 0; a < m_vocab_size; a++)
   {
+    int wordlen;
     fread(&wordlen, sizeof(int), 1, fin);
     m_vocab[a].word = (char *)calloc(wordlen + 1, sizeof(char));
     fread(m_vocab[a].word, sizeof(char), wordlen, fin);
@@ -252,6 +253,7 @@ void Vocabulary::load(FILE * fin)
       m_vocab[a].code = (char *)calloc(m_vocab[a].codelen, sizeof(char));
       fread(m_vocab[a].code, sizeof(char), m_vocab[a].codelen, fin);
     }
+    m_vocab_hash[m_vocab[a].word] = a;
   }
 }
 
