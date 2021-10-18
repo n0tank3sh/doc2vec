@@ -13,4 +13,7 @@
 ### Change
 
 - replace custom hash with std::unordered_map, to fix issue with more than 30M documents
-	
+- print debug info to stderr instead of stdout
+- rename Vocab.{cpp,h} to Vocabulary.{cpp,h}
+- refactor by adding const where suitable	
+- remove document and word size limits and refactor to modernize code
