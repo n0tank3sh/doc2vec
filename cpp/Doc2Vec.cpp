@@ -81,6 +81,7 @@ void Doc2Vec::train(const char * train_file,
   m_doc_vocab = new Vocabulary(train_file, 1, true);
   m_nn = new NN(m_word_vocab->m_vocab_size, m_doc_vocab->m_vocab_size, dim, hs, negtive);
   if(m_negtive > 0) initNegTable();
+  
 
   m_brown_corpus = new TaggedBrownCorpus(train_file);
   m_alpha = alpha;
@@ -95,9 +96,9 @@ void Doc2Vec::train(const char * train_file,
   for (size_t a = 0; a < m_trainModelThreads.size(); a++) pthread_join(pt[a], NULL);
   free(pt);
 
-  for(size_t i =  0; i < m_trainModelThreads.size(); i++) m_trainModelThreads[i]->m_corpus->close();
+  // for(size_t i =  0; i < m_trainModelThreads.size(); i++) m_trainModelThreads[i]->m_corpus->close();
   for(size_t i =  0; i < m_trainModelThreads.size(); i++) delete m_trainModelThreads[i];
-  m_brown_corpus->close();
+  // m_brown_corpus->close();
   
   m_nn->norm();
   m_wmd = new WMD(this);
@@ -132,7 +133,6 @@ void Doc2Vec::initTrainModelThreads(const char * train_file, int threads, int it
     m_trainModelThreads.push_back(model_thread);
   }
   fprintf(stderr, "corpus size: %lld\n", m_doc_vocab->m_vocab_size - 1);
-  return;
 }
 
 bool Doc2Vec::obj_knn_objs(const std::string & search, real * src,
@@ -149,7 +149,9 @@ bool Doc2Vec::obj_knn_objs(const std::string & search, real * src,
   target_vocab = target_is_word ? m_word_vocab : m_doc_vocab;
   if(!src) {
     a = search_vocab->searchVocab(search);
-    if(a < 0) return false;
+    if(a < 0) {
+      return false;
+    }
     src = &(search_vectors[a * m_nn->m_dim]);
   }
   for(b = 0, c = 0; b < target_size; b++)
@@ -187,13 +189,13 @@ bool Doc2Vec::word_knn_docs(const char * search, knn_item_t * knns, int k)
 void Doc2Vec::sent_knn_words(TaggedDocument * doc, knn_item_t * knns, int k, real * infer_vector)
 {
   infer_doc(doc, infer_vector);
-  obj_knn_objs(NULL, infer_vector, false, true, knns, k);
+  obj_knn_objs("", infer_vector, false, true, knns, k);
 }
 
 void Doc2Vec::sent_knn_docs(TaggedDocument * doc, knn_item_t * knns, int k, real * infer_vector)
 {
   infer_doc(doc, infer_vector);
-  obj_knn_objs(NULL, infer_vector, false, false, knns, k);
+  obj_knn_objs("", infer_vector, false, false, knns, k);
 }
 
 real Doc2Vec::similarity(real * src, real * target)
@@ -212,28 +214,27 @@ real Doc2Vec::distance(real * src, real * target)
   return sqrt(dis);
 }
 
-void Doc2Vec::infer_doc(TaggedDocument * doc, real * vector, int skip)
+void Doc2Vec::infer_doc(TaggedDocument * doc, real * vec, int skip)
 {
-  long long a;
   real len = 0;
   unsigned long long next_random = 1;
-  for (a = 0; a < m_nn->m_dim; a++) {
+  for (long long a = 0; a < m_nn->m_dim; a++) {
     next_random = next_random * (unsigned long long)25214903917 + 11;
-    vector[a] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / m_nn->m_dim;
+    vec[a] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / m_nn->m_dim;
   }
   m_alpha = m_start_alpha;
   TrainModelThread trainThread(0, this, NULL, true);
-  trainThread.m_doc_vector = vector;
+  trainThread.m_doc_vector = vec;
   trainThread.buildDocument(doc, skip);
-  for(a = 0; a < m_iter; a++)
+  for(long long a = 0; a < m_iter; a++)
   {
     trainThread.trainDocument();
     m_alpha = m_start_alpha * (1 - (a + 1.0) / m_iter);
     m_alpha = MAX(m_alpha, m_start_alpha * 0.0001);
   }
-  for(a = 0; a < m_nn->m_dim; a++) len += vector[a] * vector[a];
+  for(long long a = 0; a < m_nn->m_dim; a++) len += vec[a] * vec[a];
   len = sqrt(len);
-  for(a = 0; a < m_nn->m_dim; a++) vector[a] /= len;
+  for(long long a = 0; a < m_nn->m_dim; a++) vec[a] /= len;
 }
 
 real Doc2Vec::doc_likelihood(TaggedDocument * doc, int skip)

@@ -36,7 +36,7 @@ public:
 public:
   real doc_likelihood(TaggedDocument * doc, int skip = -1);
   real context_likelihood(TaggedDocument * doc, int sentence_position);
-  void infer_doc(TaggedDocument * doc, real * vector, int skip = -1);
+  void infer_doc(TaggedDocument * doc, real * vec, int skip = -1);
   bool word_knn_words(const char * search, knn_item_t * knns, int k);
   bool doc_knn_docs(const char * search, knn_item_t * knns, int k);
   bool word_knn_docs(const char * search, knn_item_t * knns, int k);
