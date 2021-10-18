@@ -39,11 +39,12 @@ TaggedDocument * TaggedBrownCorpus::next()
   }
   m_doc.clear();
   readWord(m_doc.m_tag);
-  while ( 1 )
-  {
+  while ( !feof(m_fin) )
+  {   
     std::string word;
     auto r = readWord(word);
     m_doc.m_words.push_back(word);
+    
     if (r == -1) break;
   }
   m_doc_num++;
@@ -57,9 +58,13 @@ int TaggedBrownCorpus::readWord(std::string & word)
 {
   word.clear();
   int a = 0, ch;  
-  while (!feof(m_fin))
+  while ( 1 )
   {
     ch = fgetc(m_fin);
+    if (feof(m_fin)) {
+      if (a > 0) return 0;
+      return -1;
+    }
     if (ch == 13) continue;
     if ((ch == ' ') || (ch == '\t') || (ch == '\n'))
     {
