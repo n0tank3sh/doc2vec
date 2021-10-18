@@ -13,6 +13,12 @@ class TaggedDocument
 public:
   TaggedDocument();
   ~TaggedDocument();
+
+  void clear() {
+    m_tag.clear();
+    m_words.clear();
+  }
+  
 public:
   std::string m_tag;
   std::vector<std::string> m_words;

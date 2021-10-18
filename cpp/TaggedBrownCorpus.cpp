@@ -37,15 +37,14 @@ TaggedDocument * TaggedBrownCorpus::next()
   {
     return NULL;
   }
+  m_doc.clear();
   readWord(m_doc.m_tag);
   while ( 1 )
   {
     std::string word;
-    if (readWord(word) == 0) {
-      m_doc.m_words.push_back(word);
-    } else {
-      break;
-    }
+    auto r = readWord(word);
+    m_doc.m_words.push_back(word);
+    if (r == -1) break;
   }
   m_doc_num++;
   return &m_doc;
@@ -147,7 +146,6 @@ WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
   
   int a;
   long long word_idx;
-  char * word;
   real sim, * doc_vector = NULL, * infer_vector = NULL;
   real sum = 0;
   std::map<long long, real> scores;
