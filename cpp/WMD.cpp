@@ -14,8 +14,7 @@ WMD::WMD(Doc2Vec * doc2vec): m_corpus(NULL), m_doc2vec(doc2vec), m_doc2vec_knns(
 
 WMD::~WMD()
 {
-  long long a;
-  if(m_corpus) for(a = 0; a < m_doc2vec->m_nn->m_corpus_size; a++) if(m_corpus[a]) delete m_corpus[a];
+  if(m_corpus) for(size_t a = 0; a < m_doc2vec->m_nn->m_corpus_size; a++) if(m_corpus[a]) delete m_corpus[a];
   if(m_corpus) delete [] m_corpus;
   if(m_doc2vec_knns) delete [] m_doc2vec_knns;
 }
@@ -27,13 +26,13 @@ void WMD::train()
 
 void WMD::save(FILE * fout) const
 {
-  for(long long a = 0; a < m_doc2vec->m_nn->m_corpus_size; a++) m_corpus[a]->save(fout);
+  for(size_t a = 0; a < m_doc2vec->m_nn->m_corpus_size; a++) m_corpus[a]->save(fout);
 }
 
 void WMD::load(FILE * fin)
 {
   m_corpus = new UnWeightedDocument*[m_doc2vec->m_nn->m_corpus_size];
-  for(long long a = 0; a < m_doc2vec->m_nn->m_corpus_size; a++)
+  for(size_t a = 0; a < m_doc2vec->m_nn->m_corpus_size; a++)
   {
     m_corpus[a] = new UnWeightedDocument();
     m_corpus[a]->load(fin);
@@ -57,11 +56,11 @@ void WMD::loadFromDoc2Vec()
   }
 }
 
-void WMD::sent_knn_docs(TaggedDocument * doc, knn_item_t * knns, int k)
+void WMD::sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, int k)
 {
   long long b, c;
   UnWeightedDocument * target;
-  WeightedDocument src(m_doc2vec, doc);
+  WeightedDocument src(m_doc2vec, &doc);
   top_init(knns, k);
   for(b = 1, c = 0; b < m_doc2vec->m_nn->m_corpus_size; b++)
   {
@@ -81,12 +80,12 @@ void WMD::sent_knn_docs(TaggedDocument * doc, knn_item_t * knns, int k)
   for(b = 0; b < k; b++) knns[b].word = m_doc2vec->m_doc_vocab->m_vocab[knns[b].idx].word;
 }
 
-void WMD::sent_knn_docs_ex(TaggedDocument * doc, knn_item_t * knns, int k)
+void WMD::sent_knn_docs_ex(TaggedDocument & doc, knn_item_t * knns, int k)
 {
   m_doc2vec->sent_knn_docs(doc, m_doc2vec_knns, MAX_DOC2VEC_KNN);
   
   UnWeightedDocument * target;
-  WeightedDocument src(m_doc2vec, doc);
+  WeightedDocument src(m_doc2vec, &doc);
   top_init(knns, k);
   for(long long b = 0, c = 0; b < MAX_DOC2VEC_KNN; b++)
   {
@@ -110,7 +109,6 @@ void WMD::sent_knn_docs_ex(TaggedDocument * doc, knn_item_t * knns, int k)
 real WMD::rwmd(WeightedDocument * src, UnWeightedDocument * target)
 {
   if(src->m_word_num <= 0 || target->m_word_num <= 0) return (std::numeric_limits<double>::max)();
-  int a, b;
   real score, l1 = 0;
   real * syn0norm = m_doc2vec->m_nn->m_syn0norm;
   long long dim = m_doc2vec->m_nn->m_dim;
@@ -118,13 +116,13 @@ real WMD::rwmd(WeightedDocument * src, UnWeightedDocument * target)
   real * m_dis_vector = 0;
   posix_memalign((void **)&m_dis_vector, 128, src->m_word_num * sizeof(real));
     
-  for(a = 0; a < src->m_word_num; a++) m_dis_vector[a] = (std::numeric_limits<double>::max)();
-  for(a = 0; a < src->m_word_num; a++)
-    for(b = 0; b < target->m_word_num; b++) {
+  for(size_t a = 0; a < src->m_word_num; a++) m_dis_vector[a] = (std::numeric_limits<double>::max)();
+  for(size_t a = 0; a < src->m_word_num; a++)
+    for(size_t b = 0; b < target->m_word_num; b++) {
       score = m_doc2vec->distance(&(syn0norm[src->m_words_idx[a] * dim]), &(syn0norm[target->m_words_idx[b] * dim]));
       m_dis_vector[a] = MIN(m_dis_vector[a], score);
     }
-  for(a = 0; a < src->m_word_num; a++) l1 += m_dis_vector[a] * src->m_words_wei[a];
+  for(size_t a = 0; a < src->m_word_num; a++) l1 += m_dis_vector[a] * src->m_words_wei[a];
 
   free(m_dis_vector);
   

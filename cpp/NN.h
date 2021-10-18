@@ -16,7 +16,7 @@ public:
   int m_hs;
   int m_negtive;
   real *m_syn0, *m_dsyn0, *m_syn1, *m_syn1neg;
-  long long m_vocab_size, m_corpus_size, m_dim;
+  size_t m_vocab_size, m_corpus_size, m_dim;
   //no need to flush to disk
   real * m_syn0norm, * m_dsyn0norm;
 };

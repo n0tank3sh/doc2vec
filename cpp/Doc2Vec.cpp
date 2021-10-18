@@ -62,13 +62,13 @@ void Doc2Vec::initNegTable()
   }
 }
 
-void Doc2Vec::train(const char * train_file,
+void Doc2Vec::train(const std::string & train_file,
   int dim, int cbow, int hs, int negtive,
   int iter, int window,
   real alpha, real sample,
   int min_count, int threads)
 {
-  fprintf(stderr, "Starting training using file %s\n", train_file);
+  fprintf(stderr, "Starting training using file %s\n", train_file.c_str());
   m_cbow = cbow;
   m_hs = hs;
   m_negtive = negtive;
@@ -77,16 +77,16 @@ void Doc2Vec::train(const char * train_file,
   m_sample = sample;
   m_iter = iter;
 
-  m_word_vocab = new Vocabulary(train_file, min_count);
-  m_doc_vocab = new Vocabulary(train_file, 1, true);
+  m_word_vocab = new Vocabulary(train_file.c_str(), min_count);
+  m_doc_vocab = new Vocabulary(train_file.c_str(), 1, true);
   m_nn = new NN(m_word_vocab->m_vocab_size, m_doc_vocab->m_vocab_size, dim, hs, negtive);
   if(m_negtive > 0) initNegTable();
   
 
-  m_brown_corpus = new TaggedBrownCorpus(train_file);
+  m_brown_corpus = new TaggedBrownCorpus(train_file.c_str());
   m_alpha = alpha;
   m_word_count_actual = 0;
-  initTrainModelThreads(train_file, threads, iter);
+  initTrainModelThreads(train_file.c_str(), threads, iter);
 
   fprintf(stderr, "Train with %d threads\n", (int)m_trainModelThreads.size());
   pthread_t *pt = (pthread_t *)malloc(m_trainModelThreads.size() * sizeof(pthread_t));
@@ -105,12 +105,12 @@ void Doc2Vec::train(const char * train_file,
   m_wmd->train();
 }
 
-void Doc2Vec::initTrainModelThreads(const char * train_file, int threads, int iter)
+void Doc2Vec::initTrainModelThreads(const std::string & train_file, int threads, int iter)
 {
   long long limit = m_doc_vocab->m_vocab_size / threads;
   long long sub_size = 0;
   long long tell = 0;
-  TaggedBrownCorpus brown_corpus(train_file);
+  TaggedBrownCorpus brown_corpus(train_file.c_str());
   TaggedBrownCorpus * sub_c = NULL;
   TrainModelThread * model_thread = NULL;
   TaggedDocument * doc = NULL;
@@ -119,7 +119,7 @@ void Doc2Vec::initTrainModelThreads(const char * train_file, int threads, int it
     sub_size++;
     if(sub_size >= limit)
     {
-        sub_c = new TaggedBrownCorpus(train_file, tell, sub_size);
+        sub_c = new TaggedBrownCorpus(train_file.c_str(), tell, sub_size);
         model_thread = new TrainModelThread(m_trainModelThreads.size(), this, sub_c, false);
         m_trainModelThreads.push_back(model_thread);
         tell = brown_corpus.tell();
@@ -128,7 +128,7 @@ void Doc2Vec::initTrainModelThreads(const char * train_file, int threads, int it
   }
   if(m_trainModelThreads.size() < size_t(threads))
   {
-    sub_c = new TaggedBrownCorpus(train_file, tell, -1);
+    sub_c = new TaggedBrownCorpus(train_file.c_str(), tell, -1);
     model_thread = new TrainModelThread(m_trainModelThreads.size(), this, sub_c, false);
     m_trainModelThreads.push_back(model_thread);
   }
@@ -171,28 +171,48 @@ bool Doc2Vec::obj_knn_objs(const std::string & search, real * src,
   return true;
 }
 
-bool Doc2Vec::word_knn_words(const char * search, knn_item_t * knns, int k)
+bool Doc2Vec::word_knn_words(const std::string & search, knn_item_t * knns, int k)
 {
   return obj_knn_objs(search, NULL, true, true, knns, k);
 }
 
-bool Doc2Vec::doc_knn_docs(const char * search, knn_item_t * knns, int k)
+bool Doc2Vec::doc_knn_docs(const std::string & search, knn_item_t * knns, int k)
 {
   return obj_knn_objs(search, NULL, false, false, knns, k);
 }
 
-bool Doc2Vec::word_knn_docs(const char * search, knn_item_t * knns, int k)
+bool Doc2Vec::word_knn_docs(const std::string & search, knn_item_t * knns, int k)
 {
   return obj_knn_objs(search, NULL, true, false, knns, k);
 }
 
-void Doc2Vec::sent_knn_words(TaggedDocument * doc, knn_item_t * knns, int k, real * infer_vector)
+void Doc2Vec::sent_knn_words(TaggedDocument & doc, knn_item_t * knns, int k)
+{
+  real * infer_vector = 0;
+  posix_memalign((void **)&infer_vector, 128, m_nn->m_dim * sizeof(real));
+  
+  sent_knn_words(doc, knns, k, infer_vector);
+  
+  free(infer_vector);
+}
+
+void Doc2Vec::sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, int k)
+{
+  real * infer_vector = 0;
+  posix_memalign((void **)&infer_vector, 128, m_nn->m_dim * sizeof(real));
+  
+  sent_knn_docs(doc, knns, k, infer_vector);
+  
+  free(infer_vector);
+}
+
+void Doc2Vec::sent_knn_words(TaggedDocument & doc, knn_item_t * knns, int k, real * infer_vector)
 {
   infer_doc(doc, infer_vector);
   obj_knn_objs("", infer_vector, false, true, knns, k);
 }
 
-void Doc2Vec::sent_knn_docs(TaggedDocument * doc, knn_item_t * knns, int k, real * infer_vector)
+void Doc2Vec::sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, int k, real * infer_vector)
 {
   infer_doc(doc, infer_vector);
   obj_knn_objs("", infer_vector, false, false, knns, k);
@@ -214,7 +234,7 @@ real Doc2Vec::distance(real * src, real * target)
   return sqrt(dis);
 }
 
-void Doc2Vec::infer_doc(TaggedDocument * doc, real * vec, int skip)
+void Doc2Vec::infer_doc(TaggedDocument & doc, real * vec, int skip)
 {
   real len = 0;
   unsigned long long next_random = 1;
@@ -237,7 +257,7 @@ void Doc2Vec::infer_doc(TaggedDocument * doc, real * vec, int skip)
   for(long long a = 0; a < m_nn->m_dim; a++) vec[a] /= len;
 }
 
-real Doc2Vec::doc_likelihood(TaggedDocument * doc, int skip)
+real Doc2Vec::doc_likelihood(TaggedDocument & doc, int skip)
 {
   if(!m_hs){
     return 0;
@@ -247,13 +267,13 @@ real Doc2Vec::doc_likelihood(TaggedDocument * doc, int skip)
   return trainThread.doc_likelihood();
 }
 
-real Doc2Vec::context_likelihood(TaggedDocument * doc, int sentence_position)
+real Doc2Vec::context_likelihood(TaggedDocument & doc, int sentence_position)
 {
   if(!m_hs){
     return 0;
   }
-  if(m_word_vocab->searchVocab(doc->m_words[sentence_position]) == -1 ||
-     m_word_vocab->searchVocab(doc->m_words[sentence_position]) == 0)
+  if(m_word_vocab->searchVocab(doc.m_words[sentence_position]) == -1 ||
+     m_word_vocab->searchVocab(doc.m_words[sentence_position]) == 0)
   {
     return 0;
   }
@@ -263,7 +283,7 @@ real Doc2Vec::context_likelihood(TaggedDocument * doc, int sentence_position)
   long long sent_pos = sentence_position;
   for(int i = 0; i < sentence_position; i++)
   {
-    long long word_idx = m_word_vocab->searchVocab(doc->m_words[i]);
+    long long word_idx = m_word_vocab->searchVocab(doc.m_words[i]);
     if (word_idx == -1) sent_pos--;
   }
   return trainThread.context_likelihood(sent_pos);

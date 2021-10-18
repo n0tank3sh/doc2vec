@@ -40,7 +40,6 @@ long long Vocabulary::searchVocab(const std::string & word) const
 void Vocabulary::loadFromTrainFile(const char * train_file)
 {
   TaggedBrownCorpus corpus(train_file);
-  long long a, i, k;
   m_vocab_hash.clear();
   m_vocab_size = 0;
   if(!m_doctag) addWordToVocab("</s>");
@@ -49,13 +48,13 @@ void Vocabulary::loadFromTrainFile(const char * train_file)
     if(m_doctag) {  //for doc tag
       auto & word = doc->m_tag;
       m_train_words++;
-      i = searchVocab(word);
+      long long i = searchVocab(word);
       if (i == -1) {
-        a = addWordToVocab(word);
+        long long a = addWordToVocab(word);
         m_vocab[a].cn = 1;
       }
     } else { // for doc words
-      for(k = 0; k < doc->m_words.size(); k++){
+      for(size_t k = 0; k < doc->m_words.size(); k++){
         auto & word = doc->m_words[k];
         m_train_words++;
         if (!m_doctag && m_train_words % 100000 == 0)
@@ -63,9 +62,9 @@ void Vocabulary::loadFromTrainFile(const char * train_file)
           fprintf(stderr, "%lldK%c", m_train_words / 1000, 13);
           fflush(stderr);
         }
-        i = searchVocab(word);
+        long long i = searchVocab(word);
         if (i == -1) {
-          a = addWordToVocab(word);
+          long long a = addWordToVocab(word);
           m_vocab[a].cn = 1;
         } else m_vocab[i].cn++;
       }

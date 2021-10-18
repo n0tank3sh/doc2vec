@@ -91,11 +91,10 @@ UnWeightedDocument::UnWeightedDocument() : m_words_idx(NULL), m_word_num(0) {}
 UnWeightedDocument::UnWeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
   m_words_idx(NULL), m_word_num(0)
 {
-  int a;
   long long word_idx;
   std::set<long long> dict;
   std::vector<long long> words_idx;
-  for(a = 0; a < doc->m_words.size(); a++)
+  for(size_t a = 0; a < doc->m_words.size(); a++)
   {
     auto & word = doc->m_words[a];
     word_idx = doc2vec->m_word_vocab->searchVocab(word);
@@ -107,9 +106,9 @@ UnWeightedDocument::UnWeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
     }
   }
   m_word_num = words_idx.size();
-  if(m_word_num <= 0) return;
+  if(m_word_num == 0) return;
   m_words_idx = new long long[m_word_num];
-  for(a = 0; a < m_word_num; a++) m_words_idx[a] = words_idx[a];
+  for(size_t a = 0; a < m_word_num; a++) m_words_idx[a] = words_idx[a];
 }
 
 UnWeightedDocument::~UnWeightedDocument()
@@ -139,7 +138,6 @@ WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
 {
   m_words_wei = NULL;
   
-  int a;
   long long word_idx;
   real sim, * doc_vector = NULL, * infer_vector = NULL;
   real sum = 0;
@@ -148,14 +146,14 @@ WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
   infer_vector = NULL;  
   posix_memalign((void **)&doc_vector, 128, doc2vec->m_nn->m_dim * sizeof(real));
   posix_memalign((void **)&infer_vector, 128, doc2vec->m_nn->m_dim * sizeof(real));
-  doc2vec->infer_doc(doc, doc_vector);
-  for(a = 0; a < doc->m_words.size(); a++)
+  doc2vec->infer_doc(*doc, doc_vector);
+  for(size_t a = 0; a < doc->m_words.size(); a++)
   {
     auto & word = doc->m_words[a];
     word_idx = doc2vec->m_word_vocab->searchVocab(word);
     if (word_idx == -1) continue;
     if (word_idx == 0) break;
-    doc2vec->infer_doc(doc, infer_vector, a);
+    doc2vec->infer_doc(*doc, infer_vector, a);
     sim = doc2vec->similarity(doc_vector, infer_vector);
     scores[word_idx] = pow(1.0 - sim, 1.5);
   }
@@ -163,9 +161,9 @@ WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
   free(infer_vector);
   if(m_word_num <= 0) return;
   m_words_wei = new real[m_word_num];
-  for(a = 0; a < m_word_num; a++) m_words_wei[a] = scores[m_words_idx[a]];
-  for(a = 0; a < m_word_num; a++) sum +=  m_words_wei[a];
-  for(a = 0; a < m_word_num; a++) m_words_wei[a] /= sum;
+  for(size_t a = 0; a < m_word_num; a++) m_words_wei[a] = scores[m_words_idx[a]];
+  for(size_t a = 0; a < m_word_num; a++) sum +=  m_words_wei[a];
+  for(size_t a = 0; a < m_word_num; a++) m_words_wei[a] /= sum;
 }
 
 WeightedDocument::~WeightedDocument()

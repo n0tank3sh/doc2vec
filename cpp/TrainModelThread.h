@@ -20,7 +20,7 @@ public:
 
 private:
   void updateLR();
-  void buildDocument(TaggedDocument * doc, int skip = -1);
+  void buildDocument(TaggedDocument & doc, int skip = -1);
   void trainSampleCbow(long long central, long long context_start, long long context_end);
   void trainPairSg(long long central_word, real * context);
   void trainSampleSg(long long central, long long context_start, long long context_end);

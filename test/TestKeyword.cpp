@@ -29,10 +29,10 @@ public:
     posix_memalign((void **)&infer_vector1, 128, doc2vec.dim() * sizeof(real));
     real * infer_vector2 = NULL;
     posix_memalign((void **)&infer_vector2, 128, doc2vec.dim() * sizeof(real));
-    doc2vec.infer_doc(doc, infer_vector1);
+    doc2vec.infer_doc(*doc, infer_vector1);
 
     for(int i = 0; i < doc->m_word_num - 1; i++) {
-      doc2vec.infer_doc(doc, infer_vector2, i);
+      doc2vec.infer_doc(*doc, infer_vector2, i);
       strcpy(knn_items[i].word, doc->m_words[i]);
       knn_items[i].similarity = doc2vec.similarity(infer_vector1, infer_vector2);
     }
@@ -47,7 +47,7 @@ public:
     long long word_idx;
     real * infer_vector = NULL, *wv = NULL;
     posix_memalign((void **)&infer_vector, 128, doc2vec.dim() * sizeof(real));
-    doc2vec.infer_doc(doc, infer_vector);
+    doc2vec.infer_doc(*doc, infer_vector);
     for(int i = 0; i < doc->m_word_num - 1; i++) {
       strcpy(knn_items[i].word, doc->m_words[i]);
       word_idx = doc2vec.wvocab()->searchVocab(doc->m_words[i]);
@@ -65,7 +65,7 @@ public:
     TaggedDocument doc1;
     for(int i = 0; i < doc->m_word_num - 1; i++) {
       strcpy(knn_items[i].word, doc->m_words[i]);
-      knn_items[i].similarity = doc2vec.doc_likelihood(doc, i);
+      knn_items[i].similarity = doc2vec.doc_likelihood(*doc, i);
     }
     qsort((void *)knn_items, doc->m_word_num - 1, sizeof(knn_item_t), compare);
   }

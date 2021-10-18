@@ -22,7 +22,7 @@ public:
   Doc2Vec();
   ~Doc2Vec();
 public:
-  void train(const char * train_file,
+  void train(const std::string & train_file,
     int dim, int cbow, int hs, int negtive,
     int iter, int window,
     real alpha, real sample,
@@ -34,14 +34,19 @@ public:
   WMD * wmd();
 
 public:
-  real doc_likelihood(TaggedDocument * doc, int skip = -1);
-  real context_likelihood(TaggedDocument * doc, int sentence_position);
-  void infer_doc(TaggedDocument * doc, real * vec, int skip = -1);
-  bool word_knn_words(const char * search, knn_item_t * knns, int k);
-  bool doc_knn_docs(const char * search, knn_item_t * knns, int k);
-  bool word_knn_docs(const char * search, knn_item_t * knns, int k);
-  void sent_knn_words(TaggedDocument * doc, knn_item_t * knns, int k, real * infer_vector);
-  void sent_knn_docs(TaggedDocument * doc, knn_item_t * knns, int k, real * infer_vector);
+  real doc_likelihood(TaggedDocument & doc, int skip = -1);
+  real context_likelihood(TaggedDocument & doc, int sentence_position);
+  void infer_doc(TaggedDocument & doc, real * vec, int skip = -1);
+  bool word_knn_words(const std::string & search, knn_item_t * knns, int k);
+  bool doc_knn_docs(const std::string & search, knn_item_t * knns, int k);
+  bool word_knn_docs(const std::string & search, knn_item_t * knns, int k);
+
+  void sent_knn_words(TaggedDocument & doc, knn_item_t * knns, int k, real * infer_vector);
+  void sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, int k, real * infer_vector);
+
+  void sent_knn_words(TaggedDocument & doc, knn_item_t * knns, int k);
+  void sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, int k);
+  
   real similarity(real * src, real * target);
   real distance(real * src, real * target);
 
@@ -51,7 +56,7 @@ public:
 private:
   void initExpTable();
   void initNegTable();
-  void initTrainModelThreads(const char * train_file, int threads, int iter);
+  void initTrainModelThreads(const std::string & train_file, int threads, int iter);
   bool obj_knn_objs(const std::string & search, real* src,
     bool search_is_word, bool target_is_word,
     knn_item_t * knns, int k);

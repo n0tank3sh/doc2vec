@@ -63,60 +63,49 @@ TEST_F(TestSimilar, doc_to_doc) {
 }
 
 TEST_F(TestSimilar, sent_to_doc) {
-  real * infer_vector = NULL;
-  posix_memalign((void **)&infer_vector, 128, doc2vec.dim() * sizeof(real));
-
-  doc.m_word_num = 6;
   buildDoc(&doc, "反求工程", "cad", "建模", "技术", "研究", "</s>");
-  doc2vec.sent_knn_docs(&doc, knn_items, K, infer_vector);
+  doc2vec.sent_knn_docs(doc, knn_items, K);
   print_knns("反求工程CAD建模技术研究");
 
-  doc.m_word_num = 5;
   buildDoc(&doc, "遥感信息", "发展战略", "与", "对策", "</s>");
-  doc2vec.sent_knn_docs(&doc, knn_items, K, infer_vector);
+  doc2vec.sent_knn_docs(doc, knn_items, K);
   print_knns("遥感信息发展战略与对策");
 
-  doc.m_word_num = 11;
   buildDoc(&doc, "光伏", "并网发电", "系统", "中",	"逆变器", "的", "设计",	"与", "控制", "方法", "</s>");
-  doc2vec.sent_knn_docs(&doc, knn_items, K, infer_vector);
+  doc2vec.sent_knn_docs(doc, knn_items, K);
   print_knns("光伏并网发电系统中逆变器的设计与控制方法");
 
-  doc.m_word_num = 7;
   buildDoc(&doc, "遥感信息", "水文", "动态", "模拟", "中", "应用", "</s>");
-  doc2vec.sent_knn_docs(&doc, knn_items, K, infer_vector);
+  doc2vec.sent_knn_docs(doc, knn_items, K);
   print_knns("遥感信息水文动态模拟中应用");
 
-  doc.m_word_num = 5;
   buildDoc(&doc, "新生儿", "败血症", "诊疗", "方案", "</s>");
-  doc2vec.sent_knn_docs(&doc, knn_items, K, infer_vector);
+  doc2vec.sent_knn_docs(doc, knn_items, K);
   print_knns("新生儿败血症诊疗方案");
-
-  free(infer_vector);
 }
 
 TEST_F(TestSimilar, wmd) {
-  doc.m_word_num = 5;
   buildDoc(&doc, "遥感信息", "发展战略", "与", "对策", "</s>");
-  doc2vec.wmd()->sent_knn_docs_ex(&doc, knn_items, K);
+  doc2vec.wmd()->sent_knn_docs_ex(doc, knn_items, K);
   print_knns("遥感信息发展战略与对策");
 
-  doc.m_word_num = 7;
   buildDoc(&doc, "遥感信息", "水文", "动态", "模拟", "中", "应用", "</s>");
-  doc2vec.wmd()->sent_knn_docs_ex(&doc, knn_items, K);
+  doc2vec.wmd()->sent_knn_docs_ex(doc, knn_items, K);
   print_knns("遥感信息水文动态模拟中应用");
 
-  doc.m_word_num = 6;
   buildDoc(&doc, "反求工程", "cad", "建模", "技术", "研究", "</s>");
-  doc2vec.wmd()->sent_knn_docs_ex(&doc, knn_items, K);
+  doc2vec.wmd()->sent_knn_docs_ex(doc, knn_items, K);
   print_knns("反求工程CAD建模技术研究");
 }
 
 void buildDoc(TaggedDocument * doc, ...)
 {
+  doc.clear();
+  
   va_list pArg;
   va_start(pArg, doc);
   for(int i = 0; i < doc->m_word_num; i++){
-    strcpy(doc->m_words[i], va_arg(pArg, char*));
+    doc->addWord(va_arg(pArg, char*));
   }
   va_end(pArg);
 }

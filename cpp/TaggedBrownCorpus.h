@@ -18,6 +18,7 @@ public:
     m_tag.clear();
     m_words.clear();
   }
+  void addWord(const std::string & word) { m_words.push_back(word); }
   
 public:
   std::string m_tag;
@@ -63,7 +64,7 @@ public:
   void load(FILE * fin);
 public:
   long long * m_words_idx;
-  int m_word_num;
+  unsigned int m_word_num;
 };
 //==================WeightedDocument============================
 class WeightedDocument : public UnWeightedDocument
