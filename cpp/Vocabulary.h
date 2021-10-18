@@ -22,7 +22,7 @@ public:
   Vocabulary(const char * train_file, int min_count = 5, bool doctag = false);
   ~Vocabulary();
 public:
-  long long searchVocab(const char *word) const;
+  long long searchVocab(const std::string & word) const;
   long long getVocabSize() const { return m_vocab_size; }
   long long getTrainWords() const { return m_train_words; }
   void save(FILE * fout) const;
@@ -30,7 +30,7 @@ public:
 
 private:
   void loadFromTrainFile(const char * train_file);
-  long long addWordToVocab(const char *word);
+  long long addWordToVocab(const std::string & word);
   void sortVocab();
   void createHuffmanTree();
 

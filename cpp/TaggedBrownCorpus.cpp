@@ -38,12 +38,14 @@ TaggedDocument * TaggedBrownCorpus::next()
     return NULL;
   }
   readWord(m_doc.m_tag);
-  m_doc.m_word_num = 0;
-  int eol = 0;
-  while(m_doc.m_word_num < MAX_SENTENCE_LENGTH && 0 == eol)
+  while ( 1 )
   {
-    eol = readWord(m_doc.m_words[m_doc.m_word_num]);
-    m_doc.m_word_num++;
+    std::string word;
+    if (readWord(word) == 0) {
+      m_doc.m_words.push_back(word);
+    } else {
+      break;
+    }
   }
   m_doc_num++;
   return &m_doc;
@@ -52,9 +54,10 @@ TaggedDocument * TaggedBrownCorpus::next()
 // Reads a single word from a file, assuming space + tab + EOL to be word boundaries
 // paading </s> to the EOL
 //return 0 : word, return -1: EOL
-int TaggedBrownCorpus::readWord(char *word)
+int TaggedBrownCorpus::readWord(std::string & word)
 {
-  int a = 0, ch;
+  word.clear();
+  int a = 0, ch;  
   while (!feof(m_fin))
   {
     ch = fgetc(m_fin);
@@ -68,32 +71,24 @@ int TaggedBrownCorpus::readWord(char *word)
       }
       if (ch == '\n')
       {
-        strcpy(word, (char *)"</s>");
+        word = "</s>";
         return -1;
       } else continue;
     }
-    word[a] = ch;
+    word += ch;
     a++;
-    if (a >= MAX_STRING - 1) a--;   // Truncate too long words
   }
-  word[a] = 0;
   return 0;
 }
 
 //=======================TaggedDocument=======================
 TaggedDocument::TaggedDocument()
 {
-  m_word_num = 0;
-  m_tag = (char *)calloc(MAX_STRING, sizeof(char));
-  m_words = (char **)calloc(MAX_SENTENCE_LENGTH, sizeof(char*));
-  for(int i = 0; i < MAX_SENTENCE_LENGTH; i++) m_words[i] = (char *)calloc(MAX_STRING, sizeof(char));
+
 }
 
 TaggedDocument::~TaggedDocument()
 {
-  free(m_tag);
-  for(int i = 0; i < MAX_SENTENCE_LENGTH; i++) free(m_words[i]);
-  free(m_words);
 }
 
 // //////////////UnWeightedDocument/////////////////////////////
@@ -104,12 +99,11 @@ UnWeightedDocument::UnWeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
 {
   int a;
   long long word_idx;
-  char * word;
   std::set<long long> dict;
   std::vector<long long> words_idx;
-  for(a = 0; a < doc->m_word_num; a++)
+  for(a = 0; a < doc->m_words.size(); a++)
   {
-    word = doc->m_words[a];
+    auto & word = doc->m_words[a];
     word_idx = doc2vec->m_word_vocab->searchVocab(word);
     if (word_idx == -1) continue;
     if (word_idx == 0) break;
@@ -162,9 +156,9 @@ WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
   posix_memalign((void **)&doc_vector, 128, doc2vec->m_nn->m_dim * sizeof(real));
   posix_memalign((void **)&infer_vector, 128, doc2vec->m_nn->m_dim * sizeof(real));
   doc2vec->infer_doc(doc, doc_vector);
-  for(a = 0; a < doc->m_word_num; a++)
+  for(a = 0; a < doc->m_words.size(); a++)
   {
-    word = doc->m_words[a];
+    auto & word = doc->m_words[a];
     word_idx = doc2vec->m_word_vocab->searchVocab(word);
     if (word_idx == -1) continue;
     if (word_idx == 0) break;

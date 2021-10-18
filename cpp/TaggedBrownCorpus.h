@@ -2,6 +2,10 @@
 #define TAGGED_BROWN_CORPUS_H
 
 #include "common_define.h"
+
+#include <string>
+#include <vector>
+
 class Doc2Vec;
 //==================TaggedDocument============================
 class TaggedDocument
@@ -10,9 +14,8 @@ public:
   TaggedDocument();
   ~TaggedDocument();
 public:
-  char * m_tag;
-  char ** m_words;
-  int m_word_num;
+  std::string m_tag;
+  std::vector<std::string> m_words;
 };
 //==================TaggedBrownCorpus============================
 class TaggedBrownCorpus
@@ -29,7 +32,7 @@ public:
   void close() {fclose(m_fin);m_fin=NULL;}
 
 private:
-  int readWord(char *word);
+  int readWord(std::string & word);
 
 private:
   FILE* m_fin;

@@ -27,8 +27,6 @@ public:
   UnWeightedDocument ** m_corpus;
 
   Doc2Vec * m_doc2vec;
-  real * m_dis_vector;
-  real * m_infer_vector;
   knn_item_t * m_doc2vec_knns;
 };
 

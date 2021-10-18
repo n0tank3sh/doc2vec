@@ -135,7 +135,7 @@ void Doc2Vec::initTrainModelThreads(const char * train_file, int threads, int it
   return;
 }
 
-bool Doc2Vec::obj_knn_objs(const char * search, real * src,
+bool Doc2Vec::obj_knn_objs(const std::string & search, real * src,
   bool search_is_word, bool target_is_word,
   knn_item_t * knns, int k)
 {
@@ -165,7 +165,7 @@ bool Doc2Vec::obj_knn_objs(const char * search, real * src,
     else top_collect(knns, k, b, similarity(src, target));
   }
   top_sort(knns, k);
-  for(b = 0; b < k; b++) strcpy(knns[b].word, target_vocab->m_vocab[knns[b].idx].word);
+  for(b = 0; b < k; b++) knns[b].word = target_vocab->m_vocab[knns[b].idx].word;
   return true;
 }
 

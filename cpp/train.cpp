@@ -2,7 +2,7 @@
 #include "Doc2Vec.h"
 
 //setup parameters
-char train_file[MAX_STRING], output_file[MAX_STRING];
+std::string train_file, output_file;
 int cbow = 1, window = 5, min_count = 1, num_threads = 4;
 int hs = 1, negtive = 0;
 long long dim = 100, iter = 50;
@@ -62,21 +62,20 @@ void usage()
 int get_optarg(int argc, char **argv)
 {
   int i;
-  output_file[0] = 0;
   if ((i = ArgPos((char *)"-dim", argc, argv)) > 0) dim = atoi(argv[i + 1]);
-  if ((i = ArgPos((char *)"-train", argc, argv)) > 0) strcpy(train_file, argv[i + 1]);
+  if ((i = ArgPos((char *)"-train", argc, argv)) > 0) train_file = argv[i + 1];
   if ((i = ArgPos((char *)"-cbow", argc, argv)) > 0) cbow = atoi(argv[i + 1]);
   if ((i = ArgPos((char *)"-hs", argc, argv)) > 0) hs = atoi(argv[i + 1]);
   if ((i = ArgPos((char *)"-negtive", argc, argv)) > 0) negtive = atoi(argv[i + 1]);
   if (cbow) alpha = 0.05;
   if ((i = ArgPos((char *)"-alpha", argc, argv)) > 0) alpha = atof(argv[i + 1]);
-  if ((i = ArgPos((char *)"-output", argc, argv)) > 0) strcpy(output_file, argv[i + 1]);
+  if ((i = ArgPos((char *)"-output", argc, argv)) > 0) output_file = argv[i + 1];
   if ((i = ArgPos((char *)"-window", argc, argv)) > 0) window = atoi(argv[i + 1]);
   if ((i = ArgPos((char *)"-sample", argc, argv)) > 0) sample = atof(argv[i + 1]);
   if ((i = ArgPos((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
   if ((i = ArgPos((char *)"-iter", argc, argv)) > 0) iter = atoi(argv[i + 1]);
   if ((i = ArgPos((char *)"-min-count", argc, argv)) > 0) min_count = atoi(argv[i + 1]);
-  return output_file[0] == 0 ? -1 : 0;
+  return output_file.empty() ? -1 : 0;
 }
 
 int main(int argc, char **argv)
@@ -87,9 +86,9 @@ int main(int argc, char **argv)
     return 0;
   }
   Doc2Vec doc2vec;
-  doc2vec.train(train_file, dim, cbow, hs, negtive, iter, window, alpha, sample, min_count, num_threads);
-  fprintf(stderr, "\nWrite model to %s\n", output_file);
-  FILE * fout = fopen(output_file, "wb");
+  doc2vec.train(train_file.c_str(), dim, cbow, hs, negtive, iter, window, alpha, sample, min_count, num_threads);
+  fprintf(stderr, "\nWrite model to %s\n", output_file.c_str());
+  FILE * fout = fopen(output_file.c_str(), "wb");
   doc2vec.save(fout);
   fclose(fout);
   return 0;

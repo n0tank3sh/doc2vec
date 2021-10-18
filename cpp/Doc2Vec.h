@@ -2,6 +2,7 @@
 #define DOC2VEC_H
 #include "common_define.h"
 #include <vector>
+#include <string>
 
 class TrainModelThread;
 class NN;
@@ -51,7 +52,7 @@ private:
   void initExpTable();
   void initNegTable();
   void initTrainModelThreads(const char * train_file, int threads, int iter);
-  bool obj_knn_objs(const char * search, real* src,
+  bool obj_knn_objs(const std::string & search, real* src,
     bool search_is_word, bool target_is_word,
     knn_item_t * knns, int k);
 
@@ -79,7 +80,7 @@ private:
 
 struct knn_item_t
 {
-  char word[MAX_STRING];
+  std::string word;
   long long idx;
   real similarity;
 };

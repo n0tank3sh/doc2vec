@@ -28,7 +28,7 @@ Vocabulary::~Vocabulary()
 }
 
 // Returns position of a word in the vocabulary; if the word is not found, returns -1
-long long Vocabulary::searchVocab(const char *word) const
+long long Vocabulary::searchVocab(const std::string & word) const
 {
   auto it = m_vocab_hash.find(word);
   if (it != m_vocab_hash.end()) return it->second;
@@ -37,16 +37,15 @@ long long Vocabulary::searchVocab(const char *word) const
 
 void Vocabulary::loadFromTrainFile(const char * train_file)
 {
-  char * word;
   TaggedBrownCorpus corpus(train_file);
   long long a, i, k;
   m_vocab_hash.clear();
   m_vocab_size = 0;
-  if(!m_doctag) addWordToVocab((char *)"</s>");
+  if(!m_doctag) addWordToVocab("</s>");
   TaggedDocument * doc = NULL;
   while ((doc = corpus.next()) != NULL) {
     if(m_doctag) {  //for doc tag
-      word = doc->m_tag;
+      auto & word = doc->m_tag;
       m_train_words++;
       i = searchVocab(word);
       if (i == -1) {
@@ -54,8 +53,8 @@ void Vocabulary::loadFromTrainFile(const char * train_file)
         m_vocab[a].cn = 1;
       }
     } else { // for doc words
-      for(k = 0; k < doc->m_word_num; k++){
-        word = doc->m_words[k];
+      for(k = 0; k < doc->m_words.size(); k++){
+        auto & word = doc->m_words[k];
         m_train_words++;
         if (!m_doctag && m_train_words % 100000 == 0)
         {
@@ -79,12 +78,10 @@ void Vocabulary::loadFromTrainFile(const char * train_file)
   }
 }
 
-long long Vocabulary::addWordToVocab(const char *word)
+long long Vocabulary::addWordToVocab(const std::string & word)
 {
-  unsigned int length = strlen(word) + 1;
-  if (length > MAX_STRING) length = MAX_STRING;
-  m_vocab[m_vocab_size].word = (char *)calloc(length, sizeof(char));
-  strcpy(m_vocab[m_vocab_size].word, word);
+  m_vocab[m_vocab_size].word = (char *)calloc(word.size() + 1, sizeof(char));
+  strcpy(m_vocab[m_vocab_size].word, word.c_str());
   m_vocab[m_vocab_size].cn = 0;
   m_vocab_size++;
   // Reallocate memory if needed

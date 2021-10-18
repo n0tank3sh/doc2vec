@@ -2,6 +2,8 @@
 #define TRAIN_MODEL_THREAD_H
 #include "common_define.h"
 
+#include <vector>
+
 class Doc2Vec;
 class TaggedBrownCorpus;
 class TaggedDocument;
@@ -39,9 +41,8 @@ private:
   clock_t m_start;
   unsigned long long m_next_random;
 
-  long long m_sen[MAX_SENTENCE_LENGTH];
-  long long m_sentence_length;
-  long long m_sen_nosample[MAX_SENTENCE_LENGTH];
+  std::vector<long long> m_sen;
+  std::vector<long long> m_sen_nosample;
   long long m_sentence_nosample_length;
   real * m_doc_vector;
   long long m_word_count;

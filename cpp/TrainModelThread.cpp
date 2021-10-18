@@ -15,8 +15,6 @@ TrainModelThread::TrainModelThread(long long id, Doc2Vec * doc2vec,
 
   m_start = clock();
   m_next_random = id;
-  m_sentence_length = 0;
-  m_sentence_nosample_length = 0;
   m_word_count = 0;
   m_last_word_count = 0;
 
@@ -76,20 +74,18 @@ void TrainModelThread::buildDocument(TaggedDocument * doc, int skip)
     }
     m_doc_vector = &(m_doc2vec->m_nn->m_dsyn0[m_doc2vec->m_nn->m_dim * doc_idx]);
   }
-  m_sentence_length = 0;
-  m_sentence_nosample_length = 0;
-  for(int i = 0; i < doc->m_word_num; i++) if(i != skip)
+  m_sen.clear();
+  m_sen_nosample.clear();
+  for(int i = 0; i < doc->m_words.size(); i++) if(i != skip)
   {
     long long word_idx = m_doc2vec->m_word_vocab->searchVocab(doc->m_words[i]);
     if (word_idx == -1) continue;
     if (word_idx == 0) break;
     m_word_count++;
-    m_sen_nosample[m_sentence_nosample_length] = word_idx;
-    m_sentence_nosample_length++;
+    m_sen_nosample.push_back(word_idx);
     if(!down_sample(m_doc2vec->m_word_vocab->m_vocab[word_idx].cn))
     {
-      m_sen[m_sentence_length] = word_idx;
-      m_sentence_length++;
+      m_sen.push_back(word_idx);
     }
   }
 }
@@ -213,12 +209,12 @@ void TrainModelThread::trainSampleSg(long long central, long long context_start,
 void TrainModelThread::trainDocument()
 {
   long long sentence_position, a, b, context_start, context_end, last_word;
-  for(sentence_position = 0; sentence_position < m_sentence_length; sentence_position++)
+  for(sentence_position = 0; sentence_position < m_sen.size(); sentence_position++)
   {
     m_next_random = m_next_random * (unsigned long long)25214903917 + 11;
     b = m_next_random % m_doc2vec->m_window;
     context_start = MAX(0, sentence_position - m_doc2vec->m_window + b);
-    context_end = MIN(sentence_position + m_doc2vec->m_window - b + 1, m_sentence_length);
+    context_end = MIN(sentence_position + m_doc2vec->m_window - b + 1, m_sen.size());
     if(m_doc2vec->m_cbow)
     {
       trainSampleCbow(sentence_position, context_start, context_end);
@@ -230,7 +226,7 @@ void TrainModelThread::trainDocument()
   }
   if(!m_doc2vec->m_cbow)
   {
-    for(a = 0; a < m_sentence_nosample_length; a++)
+    for(a = 0; a < m_sen_nosample.size(); a++)
     {
       last_word = m_sen_nosample[a];
       trainPairSg(last_word, m_doc_vector);
@@ -263,7 +259,7 @@ real TrainModelThread::doc_likelihood()
 {
   real likelihood = 0;
   long long sentence_position;
-  for(sentence_position = 0; sentence_position < m_sentence_nosample_length; sentence_position++)
+  for(sentence_position = 0; sentence_position < m_sen_nosample.size(); sentence_position++)
   {
     likelihood += context_likelihood(sentence_position);
   }
@@ -277,7 +273,7 @@ real TrainModelThread::context_likelihood(long long sentence_position)
   long long layer1_size = m_doc2vec->m_nn->m_dim;
   long long a, c, context_start, context_end, last_word, cw;
   context_start = MAX(0, sentence_position - m_doc2vec->m_window);
-  context_end = MIN(sentence_position + m_doc2vec->m_window + 1, m_sentence_length);
+  context_end = MIN(sentence_position + m_doc2vec->m_window + 1, m_sen.size());
   if(m_doc2vec->m_cbow)
   {
     // mean vector

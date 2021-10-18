@@ -5,14 +5,10 @@
 #include "Doc2Vec.h"
 
 // //////////////WMD/////////////////////////////
-WMD::WMD(Doc2Vec * doc2vec): m_corpus(NULL), m_doc2vec(doc2vec),
-  m_dis_vector(NULL), m_infer_vector(NULL),
-  m_doc2vec_knns(NULL)
+WMD::WMD(Doc2Vec * doc2vec): m_corpus(NULL), m_doc2vec(doc2vec), m_doc2vec_knns(NULL)
 {
   m_corpus = new UnWeightedDocument*[m_doc2vec->m_nn->m_corpus_size];
-  for(long long a = 0; a < m_doc2vec->m_nn->m_corpus_size; a++) m_corpus[a] = NULL;
-  posix_memalign((void **)&m_dis_vector, 128, MAX_SENTENCE_LENGTH * sizeof(real));
-  posix_memalign((void **)&m_infer_vector, 128, m_doc2vec->m_nn->m_dim * sizeof(real));
+  for(long long a = 0; a < m_doc2vec->m_nn->m_corpus_size; a++) m_corpus[a] = NULL;  
   m_doc2vec_knns = new knn_item_t[MAX_DOC2VEC_KNN];
 }
 
@@ -21,8 +17,6 @@ WMD::~WMD()
   long long a;
   if(m_corpus) for(a = 0; a < m_doc2vec->m_nn->m_corpus_size; a++) if(m_corpus[a]) delete m_corpus[a];
   if(m_corpus) delete [] m_corpus;
-  if(m_dis_vector) free(m_dis_vector);
-  if(m_infer_vector) free(m_infer_vector);
   if(m_doc2vec_knns) delete [] m_doc2vec_knns;
 }
 
@@ -84,12 +78,16 @@ void WMD::sent_knn_docs(TaggedDocument * doc, knn_item_t * knns, int k)
     }
   }
   top_sort(knns, k);
-  for(b = 0; b < k; b++) strcpy(knns[b].word, m_doc2vec->m_doc_vocab->m_vocab[knns[b].idx].word);
+  for(b = 0; b < k; b++) knns[b].word = m_doc2vec->m_doc_vocab->m_vocab[knns[b].idx].word;
 }
 
 void WMD::sent_knn_docs_ex(TaggedDocument * doc, knn_item_t * knns, int k)
 {
+  real * m_infer_vector = 0;
+  posix_memalign((void **)&m_infer_vector, 128, m_doc2vec->m_nn->m_dim * sizeof(real));
+
   m_doc2vec->sent_knn_docs(doc, m_doc2vec_knns, MAX_DOC2VEC_KNN, m_infer_vector);
+  
   long long b, c, idx;
   UnWeightedDocument * target;
   WeightedDocument src(m_doc2vec, doc);
@@ -110,7 +108,9 @@ void WMD::sent_knn_docs_ex(TaggedDocument * doc, knn_item_t * knns, int k)
     }
   }
   top_sort(knns, k);
-  for(b = 0; b < k; b++) strcpy(knns[b].word, m_doc2vec->m_doc_vocab->m_vocab[knns[b].idx].word);
+  for(b = 0; b < k; b++) knns[b].word = m_doc2vec->m_doc_vocab->m_vocab[knns[b].idx].word;
+
+  free(m_infer_vector);
 }
 
 real WMD::rwmd(WeightedDocument * src, UnWeightedDocument * target)
@@ -120,6 +120,10 @@ real WMD::rwmd(WeightedDocument * src, UnWeightedDocument * target)
   real score, l1 = 0;
   real * syn0norm = m_doc2vec->m_nn->m_syn0norm;
   long long dim = m_doc2vec->m_nn->m_dim;
+
+  real * m_dis_vector = 0;
+  posix_memalign((void **)&m_dis_vector, 128, src->m_word_num * sizeof(real));
+    
   for(a = 0; a < src->m_word_num; a++) m_dis_vector[a] = (std::numeric_limits<double>::max)();
   for(a = 0; a < src->m_word_num; a++)
     for(b = 0; b < target->m_word_num; b++) {
@@ -127,5 +131,8 @@ real WMD::rwmd(WeightedDocument * src, UnWeightedDocument * target)
       m_dis_vector[a] = MIN(m_dis_vector[a], score);
     }
   for(a = 0; a < src->m_word_num; a++) l1 += m_dis_vector[a] * src->m_words_wei[a];
+
+  free(m_dis_vector);
+  
   return l1;
 }
