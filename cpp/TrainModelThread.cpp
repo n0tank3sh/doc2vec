@@ -196,19 +196,18 @@ void TrainModelThread::trainPairSg(long long central_word, real * context)
 }
 
 void TrainModelThread::trainSampleSg(long long central, long long context_start, long long context_end)
-{
-  long long a, last_word;
+{  
   long long central_word = m_sen[central];
-  for(a = context_start; a < context_end; a++) if(a != central)
+  for(long long a = context_start; a < context_end; a++) if(a != central)
   {
-    last_word = m_sen[a];
+    long long last_word = m_sen[a];
     trainPairSg(central_word, &(m_doc2vec->m_nn->m_syn0[last_word * m_doc2vec->m_nn->m_dim]));
   }
 }
 
 void TrainModelThread::trainDocument()
 {
-  for(size_t sentence_position = 0; sentence_position < m_sen.size(); sentence_position++)
+  for(long long sentence_position = 0; sentence_position < m_sen.size(); sentence_position++)
   {
     m_next_random = m_next_random * (unsigned long long)25214903917 + 11;
     long long b = m_next_random % m_doc2vec->m_window;
