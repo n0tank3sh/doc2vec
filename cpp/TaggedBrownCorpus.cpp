@@ -2,9 +2,11 @@
 #include "Vocabulary.h"
 #include "NN.h"
 #include "Doc2Vec.h"
+
 #include <set>
 #include <map>
 #include <vector>
+#include <cmath>
 
 //=======================TaggedBrownCorpus=======================
 TaggedBrownCorpus::TaggedBrownCorpus(const char * train_file, long long seek, long long limit_doc):

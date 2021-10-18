@@ -2,6 +2,7 @@
 #include "TaggedBrownCorpus.h"
 
 #include <cassert>
+#include <cstring>
 
 static int vocabCompare(const void *a, const void *b);
 
@@ -17,7 +18,7 @@ Vocabulary::Vocabulary(const char * train_file, int min_count, bool doctag) :
 
 Vocabulary::~Vocabulary()
 {
-  for(long long a = 0; a < m_vocab_size; a++){
+  for(size_t a = 0; a < m_vocab_size; a++){
     free(m_vocab[a].word);
     m_vocab[a].word = NULL;
     free(m_vocab[a].point);

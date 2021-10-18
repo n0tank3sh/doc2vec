@@ -4,6 +4,8 @@
 #include "Vocabulary.h"
 #include "NN.h"
 
+#include <cmath>
+
 TrainModelThread::TrainModelThread(long long id, Doc2Vec * doc2vec,
   TaggedBrownCorpus* sub_corpus, bool infer)
 {
@@ -211,7 +213,7 @@ void TrainModelThread::trainDocument()
   {
     m_next_random = m_next_random * (unsigned long long)25214903917 + 11;
     long long b = m_next_random % m_doc2vec->m_window;
-    long long context_start = MAX(0, sentence_position - m_doc2vec->m_window + b);
+    long long context_start = MAX(0LL, sentence_position - m_doc2vec->m_window + b);
     long long context_end = MIN(sentence_position + m_doc2vec->m_window - b + 1, m_sen.size());
     if(m_doc2vec->m_cbow)
     {
@@ -269,7 +271,7 @@ real TrainModelThread::context_likelihood(long long sentence_position)
   real * syn0 = m_doc2vec->m_nn->m_syn0;
   long long layer1_size = m_doc2vec->m_nn->m_dim;
   long long a, c, context_start, context_end, last_word, cw;
-  context_start = MAX(0, sentence_position - m_doc2vec->m_window);
+  context_start = MAX(0LL, sentence_position - m_doc2vec->m_window);
   context_end = MIN(sentence_position + m_doc2vec->m_window + 1, m_sen.size());
   if(m_doc2vec->m_cbow)
   {

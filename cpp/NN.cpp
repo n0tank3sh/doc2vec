@@ -1,5 +1,7 @@
 #include "NN.h"
 
+#include <cmath>
+
 NN::NN(size_t vocab_size, size_t corpus_size, size_t dim,
   int hs, int negtive):
   m_hs(hs), m_negtive(negtive),

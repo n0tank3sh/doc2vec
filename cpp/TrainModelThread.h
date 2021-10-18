@@ -3,6 +3,7 @@
 #include "common_define.h"
 
 #include <vector>
+#include <ctime>
 
 class Doc2Vec;
 class TaggedBrownCorpus;

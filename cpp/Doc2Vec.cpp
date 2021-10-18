@@ -5,6 +5,8 @@
 #include "TrainModelThread.h"
 #include "TaggedBrownCorpus.h"
 
+#include <cmath>
+
 static void * trainModelThread(void * params);
 
 void * trainModelThread(void * params)

@@ -1,6 +1,9 @@
 #ifndef NN_H
 #define NN_H
+
 #include "common_define.h"
+
+#include <cstdio>
 
 class NN
 {

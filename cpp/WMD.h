@@ -2,6 +2,8 @@
 #define WMD_H
 #include "common_define.h"
 
+#include <cstdio>
+
 class TaggedDocument;
 class WeightedDocument;
 class UnWeightedDocument;
