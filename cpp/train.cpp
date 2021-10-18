@@ -83,12 +83,17 @@ int main(int argc, char **argv)
   if (argc == 1 || get_optarg(argc, argv) < 0)
   {
     usage();
-    return 0;
+    return 1;
   }
+  FILE * fout = fopen(output_file.c_str(), "wb");
+  if (!fout) {
+    fprintf(stderr, "Unable to open file %s\n", output_file.c_str());
+    return 1;
+  }
+
   Doc2Vec doc2vec;
   doc2vec.train(train_file.c_str(), dim, cbow, hs, negtive, iter, window, alpha, sample, min_count, num_threads);
   fprintf(stderr, "\nWrite model to %s\n", output_file.c_str());
-  FILE * fout = fopen(output_file.c_str(), "wb");
   doc2vec.save(fout);
   fclose(fout);
   return 0;
