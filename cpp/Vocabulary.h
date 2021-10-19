@@ -43,7 +43,7 @@ public:
   size_t m_train_words = 0;
   
 private:
-  size_t m_vocab_capacity = 0;
+  size_t m_vocab_capacity = 1000;
   //index: hash code of a word, value: vocab index of the word
   std::unordered_map<std::string, size_t> m_vocab_hash;
   int m_min_count;
