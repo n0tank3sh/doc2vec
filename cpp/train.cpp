@@ -96,7 +96,7 @@ int main(int argc, char **argv)
   }
 
   Doc2Vec doc2vec;
-  doc2vec.train(train_file.c_str(), dim, cbow, hs, negtive, iter, window, alpha, sample, min_count, num_threads);
+  doc2vec.train(train_file, dim, cbow, hs, negtive, iter, window, alpha, sample, min_count, num_threads);
   fprintf(stderr, "\nWrite model to %s\n", output_file.c_str());
   doc2vec.save(fout);
   fclose(fout);

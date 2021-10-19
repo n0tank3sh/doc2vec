@@ -17,19 +17,13 @@ void * trainModelThread(void * params)
 }
 
 /////==============================DOC2VEC========================
-Doc2Vec::Doc2Vec(): m_word_vocab(NULL), m_doc_vocab(NULL), m_nn(NULL), m_wmd(NULL),
-  m_brown_corpus(NULL), m_expTable(NULL), m_negtive_sample_table(NULL)
+Doc2Vec::Doc2Vec()
 {
   initExpTable();
 }
 
 Doc2Vec::~Doc2Vec()
 {
-  if(m_word_vocab) delete m_word_vocab;
-  if(m_doc_vocab) delete m_doc_vocab;
-  if(m_nn) delete m_nn;
-  if(m_wmd) delete m_wmd;
-  if(m_brown_corpus) delete m_brown_corpus;
   if(m_expTable) free(m_expTable);
   if(m_negtive_sample_table) free(m_negtive_sample_table);
   // for(size_t i =  0; i < m_trainModelThreads.size(); i++) delete m_trainModelThreads[i];
@@ -79,16 +73,15 @@ void Doc2Vec::train(const std::string & train_file,
   m_sample = sample;
   m_iter = iter;
 
-  m_word_vocab = new Vocabulary(train_file.c_str(), min_count);
-  m_doc_vocab = new Vocabulary(train_file.c_str(), 1, true);
-  m_nn = new NN(m_word_vocab->m_vocab_size, m_doc_vocab->m_vocab_size, dim, hs, negtive);
+  m_word_vocab = std::make_unique<Vocabulary>(train_file, min_count);
+  m_doc_vocab = std::make_unique<Vocabulary>(train_file, 1, true);
+  m_nn = std::make_unique<NN>(m_word_vocab->m_vocab_size, m_doc_vocab->m_vocab_size, dim, hs, negtive);
   if(m_negtive > 0) initNegTable();
   
-
-  m_brown_corpus = new TaggedBrownCorpus(train_file.c_str());
+  m_brown_corpus = std::make_unique<TaggedBrownCorpus>(train_file);
   m_alpha = alpha;
   m_word_count_actual = 0;
-  initTrainModelThreads(train_file.c_str(), threads, iter);
+  initTrainModelThreads(train_file, threads, iter);
 
   fprintf(stderr, "Train with %d threads\n", (int)m_trainModelThreads.size());
   pthread_t *pt = (pthread_t *)malloc(m_trainModelThreads.size() * sizeof(pthread_t));
@@ -103,7 +96,7 @@ void Doc2Vec::train(const std::string & train_file,
   // m_brown_corpus->close();
   
   m_nn->norm();
-  m_wmd = new WMD(this);
+  m_wmd = std::make_unique<WMD>(this);
   m_wmd->train();
 }
 
@@ -112,17 +105,15 @@ void Doc2Vec::initTrainModelThreads(const std::string & train_file, int threads,
   long long limit = m_doc_vocab->m_vocab_size / threads;
   long long sub_size = 0;
   long long tell = 0;
-  TaggedBrownCorpus brown_corpus(train_file.c_str());
-  TaggedBrownCorpus * sub_c = NULL;
-  TrainModelThread * model_thread = NULL;
+  TaggedBrownCorpus brown_corpus(train_file);
   TaggedDocument * doc = NULL;
   while((doc = brown_corpus.next()) != NULL)
   {
     sub_size++;
     if(sub_size >= limit)
     {
-        sub_c = new TaggedBrownCorpus(train_file.c_str(), tell, sub_size);
-        model_thread = new TrainModelThread(m_trainModelThreads.size(), this, sub_c, false);
+        auto sub_c = std::make_unique<TaggedBrownCorpus>(train_file, tell, sub_size);
+        auto model_thread = new TrainModelThread(m_trainModelThreads.size(), this, std::move(sub_c), false);
         m_trainModelThreads.push_back(model_thread);
         tell = brown_corpus.tell();
         sub_size = 0;
@@ -130,8 +121,8 @@ void Doc2Vec::initTrainModelThreads(const std::string & train_file, int threads,
   }
   if(m_trainModelThreads.size() < size_t(threads))
   {
-    sub_c = new TaggedBrownCorpus(train_file.c_str(), tell, -1);
-    model_thread = new TrainModelThread(m_trainModelThreads.size(), this, sub_c, false);
+    auto sub_c = std::make_unique<TaggedBrownCorpus>(train_file, tell, -1);
+    auto model_thread = new TrainModelThread(m_trainModelThreads.size(), this, std::move(sub_c), false);
     m_trainModelThreads.push_back(model_thread);
   }
   fprintf(stderr, "corpus size: %lld\n", m_doc_vocab->m_vocab_size - 1);
@@ -144,22 +135,22 @@ bool Doc2Vec::obj_knn_objs(const std::string & search, real * src,
   long long a = -1, b, c, target_size;
   real * search_vectors, * target, * target_vectors;
   Vocabulary * search_vocab, * target_vocab;
-  search_vocab = search_is_word ? m_word_vocab : m_doc_vocab;
+  search_vocab = search_is_word ? m_word_vocab.get() : m_doc_vocab.get();
   search_vectors = search_is_word ? m_nn->m_syn0norm : m_nn->m_dsyn0norm;
   target_vectors = target_is_word ? m_nn->m_syn0norm : m_nn->m_dsyn0norm;
   target_size = target_is_word ? m_nn->m_vocab_size : m_nn->m_corpus_size;
-  target_vocab = target_is_word ? m_word_vocab : m_doc_vocab;
+  target_vocab = target_is_word ? m_word_vocab.get() : m_doc_vocab.get();
   if(!src) {
     a = search_vocab->searchVocab(search);
     if(a < 0) {
       return false;
     }
-    src = &(search_vectors[a * m_nn->m_dim]);
+    src = &(search_vectors[a * m_nn->dim()]);
   }
   for(b = 0, c = 0; b < target_size; b++)
   {
     if(search_is_word == target_is_word && a == b) continue;
-    target = &(target_vectors[b * m_nn->m_dim]);
+    target = &(target_vectors[b * m_nn->dim()]);
     if(c < k){
       knns[c].similarity = similarity(src, target);
       knns[c].idx = b;
@@ -191,7 +182,7 @@ bool Doc2Vec::word_knn_docs(const std::string & search, knn_item_t * knns, int k
 void Doc2Vec::sent_knn_words(TaggedDocument & doc, knn_item_t * knns, int k)
 {
   real * infer_vector = 0;
-  posix_memalign((void **)&infer_vector, 128, m_nn->m_dim * sizeof(real));
+  posix_memalign((void **)&infer_vector, 128, m_nn->dim() * sizeof(real));
   
   sent_knn_words(doc, knns, k, infer_vector);
   
@@ -201,7 +192,7 @@ void Doc2Vec::sent_knn_words(TaggedDocument & doc, knn_item_t * knns, int k)
 void Doc2Vec::sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, int k)
 {
   real * infer_vector = 0;
-  posix_memalign((void **)&infer_vector, 128, m_nn->m_dim * sizeof(real));
+  posix_memalign((void **)&infer_vector, 128, m_nn->dim() * sizeof(real));
   
   sent_knn_docs(doc, knns, k, infer_vector);
   
@@ -224,7 +215,7 @@ real Doc2Vec::similarity(real * src, real * target)
 {
   long long a;
   real dot = 0;
-  for(a = 0; a < m_nn->m_dim; a++) dot += src[a] * target[a];
+  for(a = 0; a < m_nn->dim(); a++) dot += src[a] * target[a];
   return dot;
 }
 
@@ -232,7 +223,7 @@ real Doc2Vec::distance(real * src, real * target)
 {
   long long a;
   real dis = 0;
-  for(a = 0; a < m_nn->m_dim; a++) dis += pow(src[a] - target[a], 2);
+  for(a = 0; a < m_nn->dim(); a++) dis += pow(src[a] - target[a], 2);
   return sqrt(dis);
 }
 
@@ -240,9 +231,9 @@ void Doc2Vec::infer_doc(TaggedDocument & doc, real * vec, int skip)
 {
   real len = 0;
   unsigned long long next_random = 1;
-  for (long long a = 0; a < m_nn->m_dim; a++) {
+  for (long long a = 0; a < m_nn->dim(); a++) {
     next_random = next_random * (unsigned long long)25214903917 + 11;
-    vec[a] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / m_nn->m_dim;
+    vec[a] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / m_nn->dim();
   }
   m_alpha = m_start_alpha;
   TrainModelThread trainThread(0, this, NULL, true);
@@ -254,9 +245,9 @@ void Doc2Vec::infer_doc(TaggedDocument & doc, real * vec, int skip)
     m_alpha = m_start_alpha * (1 - (a + 1.0) / m_iter);
     m_alpha = MAX(m_alpha, m_start_alpha * 0.0001);
   }
-  for(long long a = 0; a < m_nn->m_dim; a++) len += vec[a] * vec[a];
+  for(long long a = 0; a < m_nn->dim(); a++) len += vec[a] * vec[a];
   len = sqrt(len);
-  for(long long a = 0; a < m_nn->m_dim; a++) vec[a] /= len;
+  for(long long a = 0; a < m_nn->dim(); a++) vec[a] /= len;
 }
 
 real Doc2Vec::doc_likelihood(TaggedDocument & doc, int skip)
@@ -308,11 +299,11 @@ void Doc2Vec::save(FILE * fout) const
 
 void Doc2Vec::load(FILE * fin)
 {
-  m_word_vocab = new Vocabulary();
+  m_word_vocab = std::make_unique<Vocabulary>();
   m_word_vocab->load(fin);
-  m_doc_vocab = new Vocabulary();
+  m_doc_vocab = std::make_unique<Vocabulary>();
   m_doc_vocab->load(fin);
-  m_nn = new NN();
+  m_nn = std::make_unique<NN>();
   m_nn->load(fin);
   fread(&m_cbow, sizeof(int), 1, fin);
   fread(&m_hs, sizeof(int), 1, fin);
@@ -323,15 +314,12 @@ void Doc2Vec::load(FILE * fin)
   fread(&m_iter, sizeof(int), 1, fin);
   initNegTable();
   m_nn->norm();
-  m_wmd = new WMD(this);
+  m_wmd = std::make_unique<WMD>(this);
   m_wmd->load(fin);
 }
 
-long long Doc2Vec::dim() {return m_nn->m_dim;}
-WMD * Doc2Vec::wmd() {return m_wmd;}
-Vocabulary* Doc2Vec::wvocab() {return m_word_vocab;}
-Vocabulary* Doc2Vec::dvocab() {return m_doc_vocab;}
-NN * Doc2Vec::nn() {return m_nn;};
+size_t Doc2Vec::dim() const { return m_nn->dim(); }
+
 /////==============================DOC2VEC end========================
 
 static void heap_adjust(knn_item_t * knns, int s, int m)

@@ -7,28 +7,22 @@
 #include <cmath>
 
 TrainModelThread::TrainModelThread(long long id, Doc2Vec * doc2vec,
-  TaggedBrownCorpus* sub_corpus, bool infer)
+				   std::unique_ptr<TaggedBrownCorpus> sub_corpus, bool infer)
+  : m_id(id), m_doc2vec(doc2vec), m_corpus(std::move(sub_corpus)), m_infer(infer)
 {
-  m_id = id;
-  m_doc2vec = doc2vec;
-  m_corpus = sub_corpus;
-  m_infer = infer;
-  m_doc_vector = NULL;
-
   m_start = clock();
   m_next_random = id;
   m_word_count = 0;
   m_last_word_count = 0;
 
-  m_neu1 = (real *)calloc(doc2vec->m_nn->m_dim, sizeof(real));
-  m_neu1e = (real *)calloc(doc2vec->m_nn->m_dim, sizeof(real));
+  m_neu1 = (real *)calloc(doc2vec->m_nn->dim(), sizeof(real));
+  m_neu1e = (real *)calloc(doc2vec->m_nn->dim(), sizeof(real));
 }
 
 TrainModelThread::~TrainModelThread()
 {
   free(m_neu1);
   free(m_neu1e);
-  delete m_corpus;
 }
 
 void TrainModelThread::train()
@@ -74,7 +68,7 @@ void TrainModelThread::buildDocument(TaggedDocument & doc, int skip)
     if(doc_idx < 0) {
       return;
     }
-    m_doc_vector = &(m_doc2vec->m_nn->m_dsyn0[m_doc2vec->m_nn->m_dim * doc_idx]);
+    m_doc_vector = &(m_doc2vec->m_nn->m_dsyn0[m_doc2vec->m_nn->dim() * doc_idx]);
   }
   m_sen.clear();
   m_sen_nosample.clear();
@@ -97,7 +91,7 @@ void TrainModelThread::trainSampleCbow(long long central, long long context_star
   real f, g;
   long long a, c, d, l2, last_word, target, label, cw = 0;
   long long central_word = m_sen[central];
-  long long layer1_size = m_doc2vec->m_nn->m_dim;
+  long long layer1_size = m_doc2vec->m_nn->dim();
   real * syn0 = m_doc2vec->m_nn->m_syn0;
   real * syn1 = m_doc2vec->m_nn->m_syn1;
   real * syn1neg = m_doc2vec->m_nn->m_syn1neg;
@@ -158,7 +152,7 @@ void TrainModelThread::trainPairSg(long long central_word, real * context)
 {
   real f, g;
   long long c, d, l2, target, label;
-  long long layer1_size = m_doc2vec->m_nn->m_dim;
+  long long layer1_size = m_doc2vec->m_nn->dim();
   real * syn1 = m_doc2vec->m_nn->m_syn1;
   real * syn1neg = m_doc2vec->m_nn->m_syn1neg;
   for (c = 0; c < layer1_size; c++) m_neu1e[c] = 0;
@@ -203,7 +197,7 @@ void TrainModelThread::trainSampleSg(long long central, long long context_start,
   for(long long a = context_start; a < context_end; a++) if(a != central)
   {
     long long last_word = m_sen[a];
-    trainPairSg(central_word, &(m_doc2vec->m_nn->m_syn0[last_word * m_doc2vec->m_nn->m_dim]));
+    trainPairSg(central_word, &(m_doc2vec->m_nn->m_syn0[last_word * m_doc2vec->m_nn->dim()]));
   }
 }
 
@@ -269,7 +263,7 @@ real TrainModelThread::context_likelihood(long long sentence_position)
 {
   real likelihood = 0, *context_vector = NULL;
   real * syn0 = m_doc2vec->m_nn->m_syn0;
-  long long layer1_size = m_doc2vec->m_nn->m_dim;
+  long long layer1_size = m_doc2vec->m_nn->dim();
   long long a, c, context_start, context_end, last_word, cw;
   context_start = MAX(0LL, sentence_position - m_doc2vec->m_window);
   context_end = MIN(sentence_position + m_doc2vec->m_window + 1, m_sen.size());
@@ -302,7 +296,7 @@ real TrainModelThread::likelihoodPair(long long central, real * context_vector)
 {
   long long c, d, l2, label;
   real likelihood = 0, f = 0;
-  long long layer1_size = m_doc2vec->m_nn->m_dim;
+  long long layer1_size = m_doc2vec->m_nn->dim();
   real * syn1 = m_doc2vec->m_nn->m_syn1;
   for (d = 0; d < m_doc2vec->m_word_vocab->m_vocab[central].codelen; d++){
     l2 = m_doc2vec->m_word_vocab->m_vocab[central].point[d] * layer1_size;

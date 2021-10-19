@@ -6,9 +6,8 @@
 
 static int vocabCompare(const void *a, const void *b);
 
-Vocabulary::Vocabulary(const char * train_file, int min_count, bool doctag) :
-  m_vocab(NULL), m_vocab_size(0), m_train_words(0), m_vocab_capacity(1000),
-  m_min_count(min_count), m_doctag(doctag)
+Vocabulary::Vocabulary(const std::string & train_file, int min_count, bool doctag)
+  : m_min_count(min_count), m_doctag(doctag)
 {
   if(m_doctag) m_min_count = 1;
   m_vocab = (struct vocab_word_t *)calloc(m_vocab_capacity, sizeof(struct vocab_word_t));
@@ -38,7 +37,7 @@ long long Vocabulary::searchVocab(const std::string & word) const
   else return -1;
 }
 
-void Vocabulary::loadFromTrainFile(const char * train_file)
+void Vocabulary::loadFromTrainFile(const std::string & train_file)
 {
   TaggedBrownCorpus corpus(train_file);
   m_vocab_hash.clear();

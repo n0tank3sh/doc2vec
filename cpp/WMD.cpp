@@ -5,17 +5,19 @@
 #include "Doc2Vec.h"
 
 // //////////////WMD/////////////////////////////
-WMD::WMD(Doc2Vec * doc2vec): m_corpus(NULL), m_doc2vec(doc2vec), m_doc2vec_knns(NULL)
+WMD::WMD(Doc2Vec * doc2vec) : m_doc2vec(doc2vec)
 {
   m_corpus = new UnWeightedDocument*[m_doc2vec->m_nn->m_corpus_size];
-  for(long long a = 0; a < m_doc2vec->m_nn->m_corpus_size; a++) m_corpus[a] = NULL;  
+  for(size_t a = 0; a < m_doc2vec->m_nn->m_corpus_size; a++) m_corpus[a] = NULL;  
   m_doc2vec_knns = new knn_item_t[MAX_DOC2VEC_KNN];
 }
 
 WMD::~WMD()
 {
-  if(m_corpus) for(size_t a = 0; a < m_doc2vec->m_nn->m_corpus_size; a++) if(m_corpus[a]) delete m_corpus[a];
-  if(m_corpus) delete [] m_corpus;
+  if (m_corpus) {
+    for(size_t a = 0; a < m_doc2vec->m_nn->m_corpus_size; a++) if(m_corpus[a]) delete m_corpus[a];
+    delete [] m_corpus;
+  }
   if(m_doc2vec_knns) delete [] m_doc2vec_knns;
 }
 
@@ -111,7 +113,7 @@ real WMD::rwmd(WeightedDocument * src, UnWeightedDocument * target)
   if(src->m_word_num <= 0 || target->m_word_num <= 0) return (std::numeric_limits<double>::max)();
   real score, l1 = 0;
   real * syn0norm = m_doc2vec->m_nn->m_syn0norm;
-  long long dim = m_doc2vec->m_nn->m_dim;
+  long long dim = m_doc2vec->m_nn->dim();
 
   real * m_dis_vector = 0;
   posix_memalign((void **)&m_dis_vector, 128, src->m_word_num * sizeof(real));

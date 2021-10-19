@@ -20,7 +20,6 @@ public:
   }
   void addWord(const std::string & word) { m_words.push_back(word); }
   
-public:
   std::string m_tag;
   std::vector<std::string> m_words;
 };
@@ -28,10 +27,9 @@ public:
 class TaggedBrownCorpus
 {
 public:
-  TaggedBrownCorpus(const char * train_file, long long seek = 0, long long limit_doc = -1);
+  TaggedBrownCorpus(const std::string & train_file, long long seek = 0, long long limit_doc = -1);
   ~TaggedBrownCorpus();
 
-public:
   TaggedDocument * next();
   void rewind();
   long long getDocNum() const {return m_doc_num;}
@@ -41,7 +39,6 @@ public:
 private:
   int readWord(std::string & word);
 
-private:
   FILE* m_fin;
   TaggedDocument m_doc;
   long long m_seek;
@@ -55,16 +52,16 @@ class Doc2Vec;
 class UnWeightedDocument
 {
 public:
-  UnWeightedDocument();
+  UnWeightedDocument() { }
   UnWeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc);
   virtual ~UnWeightedDocument();
 
 public:
   void save(FILE * fout) const;
   void load(FILE * fin);
-public:
-  long long * m_words_idx;
-  unsigned int m_word_num;
+
+  long long * m_words_idx = nullptr;
+  unsigned int m_word_num = 0;
 };
 //==================WeightedDocument============================
 class WeightedDocument : public UnWeightedDocument
@@ -74,7 +71,7 @@ public:
   virtual ~WeightedDocument();
 
 public:
-  real * m_words_wei;
+  real * m_words_wei = nullptr;
 };
 
 #endif

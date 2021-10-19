@@ -1,8 +1,10 @@
 #ifndef DOC2VEC_H
 #define DOC2VEC_H
 #include "common_define.h"
+
 #include <vector>
 #include <string>
+#include <memory>
 
 class TrainModelThread;
 class NN;
@@ -21,19 +23,19 @@ friend class WeightedDocument;
 public:
   Doc2Vec();
   ~Doc2Vec();
-public:
+
   void train(const std::string & train_file,
     int dim, int cbow, int hs, int negtive,
     int iter, int window,
     real alpha, real sample,
     int min_count, int threads);
-  long long dim();
-  Vocabulary* wvocab();
-  Vocabulary* dvocab();
-  NN * nn();
-  WMD * wmd();
 
-public:
+  size_t dim() const;
+  WMD * wmd() { return m_wmd.get(); }
+  Vocabulary * wvocab() { return m_word_vocab.get(); }
+  Vocabulary * dvocab() { return m_doc_vocab.get(); }
+  NN * nn() { return m_nn.get(); };
+
   real doc_likelihood(TaggedDocument & doc, int skip = -1);
   real context_likelihood(TaggedDocument & doc, int sentence_position);
   void infer_doc(TaggedDocument & doc, real * vec, int skip = -1);
@@ -50,10 +52,10 @@ public:
   real similarity(real * src, real * target);
   real distance(real * src, real * target);
 
-public:
   void save(FILE * fout) const;
   void load(FILE * fin);
-private:
+
+ private:
   void initExpTable();
   void initNegTable();
   void initTrainModelThreads(const std::string & train_file, int threads, int iter);
@@ -61,11 +63,10 @@ private:
     bool search_is_word, bool target_is_word,
     knn_item_t * knns, int k);
 
-private:
-  Vocabulary * m_word_vocab;
-  Vocabulary * m_doc_vocab;
-  NN * m_nn;
-  WMD * m_wmd;
+  std::unique_ptr<Vocabulary> m_word_vocab;
+  std::unique_ptr<Vocabulary> m_doc_vocab;
+  std::unique_ptr<NN> m_nn;
+  std::unique_ptr<WMD> m_wmd;
   int m_cbow;
   int m_hs;
   int m_negtive;
@@ -75,11 +76,11 @@ private:
   int m_iter;
 
   //no need to flush to disk
-  TaggedBrownCorpus * m_brown_corpus;
+  std::unique_ptr<TaggedBrownCorpus> m_brown_corpus;
   real m_alpha; //working lr
   long long m_word_count_actual;
-  real * m_expTable;
-  int * m_negtive_sample_table;
+  real * m_expTable = nullptr;
+  int * m_negtive_sample_table = nullptr;
   std::vector<TrainModelThread *> m_trainModelThreads;
 };
 

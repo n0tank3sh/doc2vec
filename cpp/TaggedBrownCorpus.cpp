@@ -9,10 +9,10 @@
 #include <cmath>
 
 //=======================TaggedBrownCorpus=======================
-TaggedBrownCorpus::TaggedBrownCorpus(const char * train_file, long long seek, long long limit_doc):
+TaggedBrownCorpus::TaggedBrownCorpus(const std::string & train_file, long long seek, long long limit_doc):
   m_seek(seek), m_doc_num(0), m_limit_doc(limit_doc)
 {
-  m_fin = fopen(train_file, "rb");
+  m_fin = fopen(train_file.c_str(), "rb");
   if (m_fin == NULL)
   {
     fprintf(stderr, "ERROR: training data file not found!\n");
@@ -88,10 +88,7 @@ int TaggedBrownCorpus::readWord(std::string & word)
 }
 
 // //////////////UnWeightedDocument/////////////////////////////
-UnWeightedDocument::UnWeightedDocument() : m_words_idx(NULL), m_word_num(0) {}
-
-UnWeightedDocument::UnWeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
-  m_words_idx(NULL), m_word_num(0)
+UnWeightedDocument::UnWeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc)
 {
   long long word_idx;
   std::set<long long> dict;
@@ -136,18 +133,13 @@ void UnWeightedDocument::load(FILE * fin)
 
 // //////////////WeightedDocument/////////////////////////////
 WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
-  UnWeightedDocument(doc2vec, doc), m_words_wei(NULL)
+  UnWeightedDocument(doc2vec, doc)
 {
-  m_words_wei = NULL;
-  
   long long word_idx;
-  real sim, * doc_vector = NULL, * infer_vector = NULL;
-  real sum = 0;
+  real * doc_vector = nullptr, * infer_vector = nullptr;
   std::map<long long, real> scores;
-  doc_vector = NULL;
-  infer_vector = NULL;  
-  posix_memalign((void **)&doc_vector, 128, doc2vec->m_nn->m_dim * sizeof(real));
-  posix_memalign((void **)&infer_vector, 128, doc2vec->m_nn->m_dim * sizeof(real));
+  posix_memalign((void **)&doc_vector, 128, doc2vec->m_nn->dim() * sizeof(real));
+  posix_memalign((void **)&infer_vector, 128, doc2vec->m_nn->dim() * sizeof(real));
   doc2vec->infer_doc(*doc, doc_vector);
   for(size_t a = 0; a < doc->m_words.size(); a++)
   {
@@ -156,7 +148,7 @@ WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
     if (word_idx == -1) continue;
     if (word_idx == 0) break;
     doc2vec->infer_doc(*doc, infer_vector, a);
-    sim = doc2vec->similarity(doc_vector, infer_vector);
+    real sim = doc2vec->similarity(doc_vector, infer_vector);
     scores[word_idx] = pow(1.0 - sim, 1.5);
   }
   free(doc_vector);
@@ -164,7 +156,9 @@ WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
   if(m_word_num <= 0) return;
   m_words_wei = new real[m_word_num];
   for(size_t a = 0; a < m_word_num; a++) m_words_wei[a] = scores[m_words_idx[a]];
-  for(size_t a = 0; a < m_word_num; a++) sum +=  m_words_wei[a];
+
+  real sum = 0;
+  for(size_t a = 0; a < m_word_num; a++) sum += m_words_wei[a];
   for(size_t a = 0; a < m_word_num; a++) m_words_wei[a] /= sum;
 }
 
