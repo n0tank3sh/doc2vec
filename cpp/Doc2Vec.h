@@ -25,7 +25,7 @@ public:
   ~Doc2Vec();
 
   void train(const std::string & train_file,
-    int dim, int cbow, int hs, int negtive,
+    size_t dim, bool cbow, int hs, int negtive,
     int iter, int window,
     real alpha, real sample,
     int min_count, int threads);
@@ -67,7 +67,8 @@ public:
   std::unique_ptr<Vocabulary> m_doc_vocab;
   std::unique_ptr<NN> m_nn;
   std::unique_ptr<WMD> m_wmd;
-  int m_cbow;
+  
+  bool m_cbow = true;
   int m_hs;
   int m_negtive;
   int m_window;

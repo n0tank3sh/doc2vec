@@ -5,7 +5,8 @@
 
 //setup parameters
 std::string train_file, output_file;
-int cbow = 1, window = 5, min_count = 1, num_threads = 4;
+bool cbow = true;
+int window = 5, min_count = 1, num_threads = 4;
 int hs = 1, negtive = 0;
 long long dim = 100, iter = 50;
 real alpha = 0.025, sample = 1e-3;
@@ -68,7 +69,7 @@ int get_optarg(int argc, char **argv)
   int i;
   if ((i = ArgPos((char *)"-dim", argc, argv)) > 0) dim = atoi(argv[i + 1]);
   if ((i = ArgPos((char *)"-train", argc, argv)) > 0) train_file = argv[i + 1];
-  if ((i = ArgPos((char *)"-cbow", argc, argv)) > 0) cbow = atoi(argv[i + 1]);
+  if ((i = ArgPos((char *)"-cbow", argc, argv)) > 0) cbow = atoi(argv[i + 1]) ? true : false;
   if ((i = ArgPos((char *)"-hs", argc, argv)) > 0) hs = atoi(argv[i + 1]);
   if ((i = ArgPos((char *)"-negtive", argc, argv)) > 0) negtive = atoi(argv[i + 1]);
   if (cbow) alpha = 0.05;

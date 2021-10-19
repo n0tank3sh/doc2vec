@@ -59,7 +59,7 @@ void Doc2Vec::initNegTable()
 }
 
 void Doc2Vec::train(const std::string & train_file,
-  int dim, int cbow, int hs, int negtive,
+  size_t dim, bool cbow, int hs, int negtive,
   int iter, int window,
   real alpha, real sample,
   int min_count, int threads)
