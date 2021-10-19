@@ -3,8 +3,8 @@
 #include "NN.h"
 #include "Doc2Vec.h"
 
-#include <set>
-#include <map>
+#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 #include <cmath>
 
@@ -91,7 +91,7 @@ int TaggedBrownCorpus::readWord(std::string & word)
 UnWeightedDocument::UnWeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc)
 {
   long long word_idx;
-  std::set<long long> dict;
+  std::unordered_set<long long> dict;
   std::vector<long long> words_idx;
   for(size_t a = 0; a < doc->m_words.size(); a++)
   {
@@ -99,7 +99,7 @@ UnWeightedDocument::UnWeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc)
     word_idx = doc2vec->m_word_vocab->searchVocab(word);
     if (word_idx == -1) continue;
     if (word_idx == 0) break;
-    if(dict.find(word_idx) == dict.end()){
+    if (!dict.count(word_idx)) {
       dict.insert(word_idx);
       words_idx.push_back(word_idx);
     }
@@ -137,7 +137,7 @@ WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
 {
   long long word_idx;
   real * doc_vector = nullptr, * infer_vector = nullptr;
-  std::map<long long, real> scores;
+  std::unordered_map<long long, real> scores;
   posix_memalign((void **)&doc_vector, 128, doc2vec->m_nn->dim() * sizeof(real));
   posix_memalign((void **)&infer_vector, 128, doc2vec->m_nn->dim() * sizeof(real));
   doc2vec->infer_doc(*doc, doc_vector);
