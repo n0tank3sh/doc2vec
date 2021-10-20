@@ -54,24 +54,20 @@ class UnWeightedDocument
 public:
   UnWeightedDocument() { }
   UnWeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc);
-  virtual ~UnWeightedDocument();
 
-public:
   void save(FILE * fout) const;
   void load(FILE * fin);
 
-  long long * m_words_idx = nullptr;
-  unsigned int m_word_num = 0;
+  std::vector<long long> m_words_idx;
 };
+
 //==================WeightedDocument============================
 class WeightedDocument : public UnWeightedDocument
 {
 public:
   WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc);
-  virtual ~WeightedDocument();
 
-public:
-  real * m_words_wei = nullptr;
+  std::vector<real> m_words_wei;
 };
 
 #endif

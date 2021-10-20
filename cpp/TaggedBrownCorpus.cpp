@@ -90,45 +90,38 @@ int TaggedBrownCorpus::readWord(std::string & word)
 // //////////////UnWeightedDocument/////////////////////////////
 UnWeightedDocument::UnWeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc)
 {
-  long long word_idx;
   std::unordered_set<long long> dict;
-  std::vector<long long> words_idx;
   for(size_t a = 0; a < doc->m_words.size(); a++)
   {
     auto & word = doc->m_words[a];
-    word_idx = doc2vec->m_word_vocab->searchVocab(word);
+    auto word_idx = doc2vec->m_word_vocab->searchVocab(word);
     if (word_idx == -1) continue;
     if (word_idx == 0) break;
     if (!dict.count(word_idx)) {
       dict.insert(word_idx);
-      words_idx.push_back(word_idx);
+      m_words_idx.push_back(word_idx);
     }
   }
-  m_word_num = words_idx.size();
-  if(m_word_num == 0) return;
-  m_words_idx = new long long[m_word_num];
-  for(size_t a = 0; a < m_word_num; a++) m_words_idx[a] = words_idx[a];
-}
-
-UnWeightedDocument::~UnWeightedDocument()
-{
-  delete [] m_words_idx;
 }
 
 void UnWeightedDocument::save(FILE * fout) const
 {
-  fwrite(&m_word_num, sizeof(int), 1, fout);
-  if(m_word_num > 0) fwrite(m_words_idx, sizeof(long long), m_word_num, fout);
+  unsigned int word_num = m_words_idx.size();
+  fwrite(&word_num, sizeof(unsigned int), 1, fout);
+  for (auto & idx : m_words_idx) fwrite(&idx, sizeof(long long), 1, fout);
 }
+
 void UnWeightedDocument::load(FILE * fin)
 {
-  fread(&m_word_num, sizeof(int), 1, fin);
-  if(m_word_num > 0)
-  {
-    m_words_idx = new long long[m_word_num];
-    fread(m_words_idx, sizeof(long long), m_word_num, fin);
+  m_words_idx.clear();
+  
+  unsigned int word_num;
+  fread(&word_num, sizeof(unsigned int), 1, fin);
+  for (size_t i = 0; i < word_num; i++) {
+    long long idx;
+    fread(&idx, sizeof(long long), 1, fin);
+    m_words_idx.push_back(idx);
   }
-  else m_words_idx = NULL;
 }
 
 // //////////////WeightedDocument/////////////////////////////
@@ -153,16 +146,13 @@ WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
   }
   free(doc_vector);
   free(infer_vector);
-  if(m_word_num <= 0) return;
-  m_words_wei = new real[m_word_num];
-  for(size_t a = 0; a < m_word_num; a++) m_words_wei[a] = scores[m_words_idx[a]];
 
   real sum = 0;
-  for(size_t a = 0; a < m_word_num; a++) sum += m_words_wei[a];
-  for(size_t a = 0; a < m_word_num; a++) m_words_wei[a] /= sum;
-}
+  for (auto & idx : m_words_idx) {
+    auto w = scores[idx];
+    m_words_wei.push_back(w);
+    sum += w;
+  }
 
-WeightedDocument::~WeightedDocument()
-{
-  delete [] m_words_wei;
+  for (auto & w : m_words_wei) w /= sum;
 }
