@@ -3,30 +3,28 @@
 
 #include <cassert>
 #include <cstring>
+#include <algorithm>
 
-static int vocabCompare(const void *a, const void *b);
+static inline bool vocabCompare(const vocab_word_t & a, const vocab_word_t & b)
+{
+    return a.cn > b.cn;
+}
 
 Vocabulary::Vocabulary(const std::string & train_file, int min_count, bool doctag)
   : m_min_count(min_count), m_doctag(doctag)
 {
   if(m_doctag) m_min_count = 1;
-  m_vocab = (struct vocab_word_t *)calloc(m_vocab_capacity, sizeof(struct vocab_word_t));
   loadFromTrainFile(train_file);
   if(!m_doctag) createHuffmanTree();
 }
 
 Vocabulary::~Vocabulary()
 {
-  for(size_t a = 0; a < m_vocab_size; a++){
-    free(m_vocab[a].word);
-    m_vocab[a].word = NULL;
-    free(m_vocab[a].point);
-    m_vocab[a].point = NULL;
-    free(m_vocab[a].code);
-    m_vocab[a].code = NULL;
+  for (auto & wd : m_vocab) {
+    free(wd.word);
+    free(wd.point);
+    free(wd.code);
   }
-    
-  free(m_vocab);
 }
 
 // Returns position of a word in the vocabulary; if the word is not found, returns -1
@@ -40,8 +38,8 @@ long long Vocabulary::searchVocab(const std::string & word) const
 void Vocabulary::loadFromTrainFile(const std::string & train_file)
 {
   TaggedBrownCorpus corpus(train_file);
+  m_vocab.clear();
   m_vocab_hash.clear();
-  m_vocab_size = 0;
   if(!m_doctag) addWordToVocab("</s>");
   TaggedDocument * doc = NULL;
   while ((doc = corpus.next()) != NULL) {
@@ -74,84 +72,72 @@ void Vocabulary::loadFromTrainFile(const std::string & train_file)
   if(!m_doctag)
   {
     sortVocab();
-    fprintf(stderr, "Vocab size: %lld\n", m_vocab_size);
+    fprintf(stderr, "Vocab size: %lld\n", m_vocab.size());
     fprintf(stderr, "Words in train file: %lld\n", m_train_words);
   }
 }
 
 long long Vocabulary::addWordToVocab(const std::string & word)
 {
-  m_vocab[m_vocab_size].word = (char *)calloc(word.size() + 1, sizeof(char));
-  strcpy(m_vocab[m_vocab_size].word, word.c_str());
-  m_vocab[m_vocab_size].cn = 0;
-  m_vocab_size++;
-  // Reallocate memory if needed
-  if (m_vocab_size + 2 >= m_vocab_capacity)
-  {
-    m_vocab_capacity += 1000;
-    m_vocab = (struct vocab_word_t *)realloc(m_vocab, m_vocab_capacity * sizeof(struct vocab_word_t));
-    for(size_t a = m_vocab_size+1; a < m_vocab_capacity; a++){
-      m_vocab[a].word = NULL;
-      m_vocab[a].point = NULL;
-      m_vocab[a].code = NULL;
-    }
-  }
-  m_vocab_hash[word] = m_vocab_size - 1;
-  return m_vocab_size - 1;
+  vocab_word_t w;
+  w.word = (char *)calloc(word.size() + 1, sizeof(char));
+  strcpy(w.word, word.c_str());
+  w.cn = 0;
+
+  long long idx = m_vocab.size();
+  
+  m_vocab.push_back(w);
+  m_vocab_hash[word] = idx;
+  return idx;
 }
 
 // Sorts the vocabulary by frequency using word counts, frequent->infrequent
 void Vocabulary::sortVocab()
 {
-  assert(m_vocab_size > 0);
-  // Sort the vocabulary and keep </s> at the first position
-  qsort(&m_vocab[1], m_vocab_size - 1, sizeof(struct vocab_word_t), vocabCompare);
+  assert(!m_vocab.empty());
+  fprintf(stderr, "sorting\n");
+  // Sort the vocabulary and keep </s> at the first position  
+  std::sort(m_vocab.begin() + 1, m_vocab.end(), vocabCompare);
   //reduce words and re-hash
   m_vocab_hash.clear();
-  size_t size = m_vocab_size;
   m_train_words = 0;
-  for (size_t a = 0; a < size; a++)
-  {
+  fprintf(stderr, "removing\n");
+  while (m_vocab.size() > 1 && m_vocab.back().cn < m_min_count) {
     // Words occuring less than min_count times will be discarded from the vocab
-    if (m_vocab[a].cn < m_min_count)
-    {
-      m_vocab_size--;
-      free(m_vocab[a].word);
-      m_vocab[a].word = NULL;
-      free(m_vocab[a].point);
-      m_vocab[a].point = NULL;
-      free(m_vocab[a].code);
-      m_vocab[a].code = NULL;
-    }
-    else
-    {
-      // Hash will be re-computed, as after the sorting it is not actual
-      m_vocab_hash[m_vocab[a].word] = a;
-      m_train_words += m_vocab[a].cn;
-    }
+    auto & w = m_vocab.back();
+    free(w.word);
+    free(w.point);
+    free(w.code);
+    m_vocab.pop_back();
   }
-  m_train_words -= m_vocab[0].cn; //exclude <s>
-  m_vocab = (struct vocab_word_t *)realloc(m_vocab, (m_vocab_size + 1) * sizeof(struct vocab_word_t));
+  fprintf(stderr, "rehashing\n");
+  for (size_t i = 0; i < m_vocab.size(); i++) {
+    // Hash will be re-computed, as after the sorting it is not actual
+    m_vocab_hash[m_vocab[i].word] = i;
+    m_train_words += m_vocab[i].cn;
+  }
+  m_train_words -= m_vocab.front().cn; //exclude <s>
+  m_vocab.shrink_to_fit();
 }
 
 void Vocabulary::createHuffmanTree()
 {
   // Allocate memory for the binary tree construction
-  long long a, b, i, min1i, min2i, pos1, pos2, point[MAX_CODE_LENGTH];
+  long long b, i, min1i, min2i, point[MAX_CODE_LENGTH];
   char code[MAX_CODE_LENGTH];
-  long long *count = (long long *)calloc(m_vocab_size * 2 + 1, sizeof(long long));
-  long long *binary = (long long *)calloc(m_vocab_size * 2 + 1, sizeof(long long));
-  long long *parent_node = (long long *)calloc(m_vocab_size * 2 + 1, sizeof(long long));
-  for (a = 0; a < m_vocab_size; a++) {
+  long long *count = (long long *)calloc(m_vocab.size() * 2 + 1, sizeof(long long));
+  long long *binary = (long long *)calloc(m_vocab.size() * 2 + 1, sizeof(long long));
+  long long *parent_node = (long long *)calloc(m_vocab.size() * 2 + 1, sizeof(long long));
+  for (size_t a = 0; a < m_vocab.size(); a++) {
     m_vocab[a].code = (char *)calloc(MAX_CODE_LENGTH, sizeof(char));
     m_vocab[a].point = (int *)calloc(MAX_CODE_LENGTH, sizeof(int));
+    count[a] = m_vocab[a].cn;
   }
-  for (a = 0; a < m_vocab_size; a++) count[a] = m_vocab[a].cn;
-  for (a = m_vocab_size; a < m_vocab_size * 2; a++) count[a] = 1e15;
-  pos1 = m_vocab_size - 1;
-  pos2 = m_vocab_size;
+  for (size_t a = m_vocab.size(); a < m_vocab.size() * 2; a++) count[a] = 1e15;
+  long long pos1 = m_vocab.size() - 1;
+  long long pos2 = m_vocab.size();
   // Following algorithm constructs the Huffman tree by adding one node at a time
-  for (a = 0; a < m_vocab_size - 1; a++) {
+  for (size_t a = 0; a < m_vocab.size() - 1; a++) {
     // First, find two smallest nodes 'min1, min2'
     if (pos1 >= 0) {
       if (count[pos1] < count[pos2]) {
@@ -177,13 +163,13 @@ void Vocabulary::createHuffmanTree()
       min2i = pos2;
       pos2++;
     }
-    count[m_vocab_size + a] = count[min1i] + count[min2i];
-    parent_node[min1i] = m_vocab_size + a;
-    parent_node[min2i] = m_vocab_size + a;
+    count[m_vocab.size() + a] = count[min1i] + count[min2i];
+    parent_node[min1i] = m_vocab.size() + a;
+    parent_node[min2i] = m_vocab.size() + a;
     binary[min2i] = 1;
   }
   // Now assign binary code to each vocabulary word
-  for (a = 0; a < m_vocab_size; a++) {
+  for (size_t a = 0; a < m_vocab.size(); a++) {
     b = a;
     i = 0;
     while (1) {
@@ -191,13 +177,13 @@ void Vocabulary::createHuffmanTree()
       point[i] = b;
       i++;
       b = parent_node[b];
-      if (b == m_vocab_size * 2 - 2) break;
+      if (b == m_vocab.size() * 2 - 2) break;
     }
     m_vocab[a].codelen = i;
-    m_vocab[a].point[0] = m_vocab_size - 2;
+    m_vocab[a].point[0] = m_vocab.size() - 2;
     for (b = 0; b < i; b++) {
       m_vocab[a].code[i - b - 1] = code[b];
-      m_vocab[a].point[i - b] = point[b] - m_vocab_size;
+      m_vocab[a].point[i - b] = point[b] - m_vocab.size();
     }
   }
   free(count);
@@ -207,55 +193,55 @@ void Vocabulary::createHuffmanTree()
 
 void Vocabulary::save(FILE * fout) const
 {
-  fwrite(&m_vocab_size, sizeof(long long), 1, fout);
+  long long dummy = 0, size = m_vocab.size();
+  
+  fwrite(&size, sizeof(long long), 1, fout);
   fwrite(&m_train_words, sizeof(long long), 1, fout);
-  fwrite(&m_vocab_capacity, sizeof(long long), 1, fout);
+  fwrite(&dummy, sizeof(long long), 1, fout);
   fwrite(&m_min_count, sizeof(int), 1, fout);
   fwrite(&m_doctag, sizeof(bool), 1, fout);
-  for(size_t a = 0; a < m_vocab_size; a++)
-  {
+  for (auto & w : m_vocab) {
     int wordlen;
-    wordlen = strlen(m_vocab[a].word);
+    wordlen = strlen(w.word);
     fwrite(&wordlen, sizeof(int), 1, fout);
-    fwrite(m_vocab[a].word, sizeof(char), wordlen, fout);
-    fwrite(&(m_vocab[a].cn), sizeof(long long), 1, fout);
+    fwrite(w.word, sizeof(char), wordlen, fout);
+    fwrite(&(w.cn), sizeof(size_t), 1, fout);
     if(!m_doctag)
     {
-      fwrite(&(m_vocab[a].codelen), sizeof(char), 1, fout);
-      fwrite(m_vocab[a].point, sizeof(int), m_vocab[a].codelen, fout);
-      fwrite(m_vocab[a].code, sizeof(char), m_vocab[a].codelen, fout);
+      fwrite(&(w.codelen), sizeof(char), 1, fout);
+      fwrite(w.point, sizeof(int), w.codelen, fout);
+      fwrite(w.code, sizeof(char), w.codelen, fout);
     }
   }
 }
 
 void Vocabulary::load(FILE * fin)
 {
-  fread(&m_vocab_size, sizeof(long long), 1, fin);
+  long long size, dummy;
+  fread(&size, sizeof(long long), 1, fin);
   fread(&m_train_words, sizeof(long long), 1, fin);
-  fread(&m_vocab_capacity, sizeof(long long), 1, fin);
+  fread(&dummy, sizeof(long long), 1, fin);
   fread(&m_min_count, sizeof(int), 1, fin);
   fread(&m_doctag, sizeof(bool), 1, fin);
-  m_vocab = (struct vocab_word_t *)calloc(m_vocab_capacity, sizeof(struct vocab_word_t));
-  for(size_t a = 0; a < m_vocab_size; a++)
+  m_vocab.clear();
+  for(size_t a = 0; a < size; a++)
   {
+    vocab_word_t w;
+    
     int wordlen;
     fread(&wordlen, sizeof(int), 1, fin);
-    m_vocab[a].word = (char *)calloc(wordlen + 1, sizeof(char));
-    fread(m_vocab[a].word, sizeof(char), wordlen, fin);
-    fread(&(m_vocab[a].cn), sizeof(long long), 1, fin);
+    w.word = (char *)calloc(wordlen + 1, sizeof(char));
+    fread(w.word, sizeof(char), wordlen, fin);
+    fread(&(w.cn), sizeof(size_t), 1, fin);
     if(!m_doctag)
     {
-      fread(&(m_vocab[a].codelen), sizeof(char), 1, fin);
-      m_vocab[a].point = (int *)calloc(m_vocab[a].codelen, sizeof(int));
-      fread(m_vocab[a].point, sizeof(int), m_vocab[a].codelen, fin);
-      m_vocab[a].code = (char *)calloc(m_vocab[a].codelen, sizeof(char));
-      fread(m_vocab[a].code, sizeof(char), m_vocab[a].codelen, fin);
+      fread(&(w.codelen), sizeof(char), 1, fin);
+      w.point = (int *)calloc(w.codelen, sizeof(int));
+      fread(w.point, sizeof(int), w.codelen, fin);
+      w.code = (char *)calloc(w.codelen, sizeof(char));
+      fread(w.code, sizeof(char), w.codelen, fin);      
     }
-    m_vocab_hash[m_vocab[a].word] = a;
+    m_vocab_hash[w.word] = m_vocab.size();
+    m_vocab.push_back(w);
   }
-}
-
-int vocabCompare(const void *a, const void *b)
-{
-    return ((struct vocab_word_t *)b)->cn - ((struct vocab_word_t *)a)->cn;
 }

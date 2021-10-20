@@ -4,6 +4,7 @@
 #include "common_define.h"
 
 #include <unordered_map>
+#include <vector>
 #include <string>
 
 struct vocab_word_t
@@ -23,10 +24,13 @@ public:
   ~Vocabulary();
 
   long long searchVocab(const std::string & word) const;
-  long long getVocabSize() const { return m_vocab_size; }
+  long long getVocabSize() const { return m_vocab.size(); }
   long long getTrainWords() const { return m_train_words; }
   void save(FILE * fout) const;
   void load(FILE * fin);
+  
+  size_t size() const { return m_vocab.size(); }
+  const std::vector<vocab_word_t> & getWords() const { return m_vocab; }
 
 private:
   void loadFromTrainFile(const std::string & train_file);
@@ -34,16 +38,11 @@ private:
   void sortVocab();
   void createHuffmanTree();
 
-public:
+ private:
   //first place is <s>, others sorted by its frequency reversely
-  struct vocab_word_t* m_vocab = nullptr;
-  //size of vocab including <s>
-  size_t m_vocab_size = 0;
+  std::vector<vocab_word_t> m_vocab;
   //total words of corpus. ie. sum up all frequency of words(exculude <s>)
   size_t m_train_words = 0;
-  
-private:
-  size_t m_vocab_capacity = 1000;
   //index: hash code of a word, value: vocab index of the word
   std::unordered_map<std::string, size_t> m_vocab_hash;
   int m_min_count;
