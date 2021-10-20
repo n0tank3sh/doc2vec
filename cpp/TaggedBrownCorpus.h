@@ -33,7 +33,7 @@ public:
   TaggedDocument * next();
   void rewind();
   long long getDocNum() const {return m_doc_num;}
-  long long tell() {return ftell(m_fin);}
+  long long tell() {return ftello(m_fin);}
   void close() {fclose(m_fin);m_fin=NULL;}
 
 private:
