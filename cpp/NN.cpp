@@ -1,6 +1,7 @@
 #include "NN.h"
 
 #include <cmath>
+#include <algorithm>
 
 NN::NN(size_t vocab_size, size_t corpus_size, size_t dim, bool hs, int negative):
   m_hs(hs), m_negative(negative),
@@ -31,20 +32,14 @@ NN::NN(size_t vocab_size, size_t corpus_size, size_t dim, bool hs, int negative)
   if (m_hs) {
     posix_memalign((void **)&m_syn1, 128, (long long)m_vocab_size * m_dim * sizeof(real));
     if (m_syn1 == NULL) {fprintf(stderr, "Memory allocation failed\n"); exit(1);}
-    for (size_t a = 0; a < m_vocab_size; a++) {
-      for (size_t b = 0; b < m_dim; b++) {
-	m_syn1[a * m_dim + b] = 0;
-      }
-    }    
+
+    std::fill(m_syn1, m_syn1 + m_vocab_size * m_dim, 0);    
   }
   if (m_negative) {
     posix_memalign((void **)&m_syn1neg, 128, (long long)m_vocab_size * m_dim * sizeof(real));
     if (m_syn1neg == NULL) {fprintf(stderr, "Memory allocation failed\n"); exit(1);}
-    for (size_t a = 0; a < m_vocab_size; a++) {
-      for (size_t b = 0; b < m_dim; b++) {
-	m_syn1neg[a * m_dim + b] = 0;
-      }
-    }
+
+    std::fill(m_syn1neg, m_syn1neg + m_vocab_size * m_dim, 0);
   }
 }
 
