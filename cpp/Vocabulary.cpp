@@ -87,10 +87,6 @@ void Vocabulary::sortVocab()
   fprintf(stderr, "removing\n");
   while (m_vocab.size() > 1 && m_vocab.back().cn < m_min_count) {
     // Words occuring less than min_count times will be discarded from the vocab
-    auto & w = m_vocab.back();
-    free(w.word);
-    free(w.point);
-    free(w.code);
     m_vocab.pop_back();
   }
   fprintf(stderr, "rehashing\n");
