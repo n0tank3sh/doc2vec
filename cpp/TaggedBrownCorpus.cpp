@@ -94,7 +94,7 @@ UnWeightedDocument::UnWeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc)
   for(size_t a = 0; a < doc->m_words.size(); a++)
   {
     auto & word = doc->m_words[a];
-    auto word_idx = doc2vec->m_word_vocab->searchVocab(word);
+    auto word_idx = doc2vec->wvocab().searchVocab(word);
     if (word_idx == -1) continue;
     if (word_idx == 0) break;
     if (!dict.count(word_idx)) {
@@ -131,13 +131,13 @@ WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
   long long word_idx;
   real * doc_vector = nullptr, * infer_vector = nullptr;
   std::unordered_map<long long, real> scores;
-  posix_memalign((void **)&doc_vector, 128, doc2vec->m_nn->dim() * sizeof(real));
-  posix_memalign((void **)&infer_vector, 128, doc2vec->m_nn->dim() * sizeof(real));
+  posix_memalign((void **)&doc_vector, 128, doc2vec->nn().dim() * sizeof(real));
+  posix_memalign((void **)&infer_vector, 128, doc2vec->nn().dim() * sizeof(real));
   doc2vec->infer_doc(*doc, doc_vector);
   for(size_t a = 0; a < doc->m_words.size(); a++)
   {
     auto & word = doc->m_words[a];
-    word_idx = doc2vec->m_word_vocab->searchVocab(word);
+    word_idx = doc2vec->wvocab().searchVocab(word);
     if (word_idx == -1) continue;
     if (word_idx == 0) break;
     doc2vec->infer_doc(*doc, infer_vector, a);

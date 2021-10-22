@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cstring>
 #include <algorithm>
+#include <memory>
 
 static inline bool vocabCompare(const vocab_word_t & a, const vocab_word_t & b)
 {
@@ -83,7 +84,7 @@ long long Vocabulary::addWordToVocab(const std::string & word)
   w.word = (char *)calloc(word.size() + 1, sizeof(char));
   strcpy(w.word, word.c_str());
   w.cn = 0;
-
+  
   long long idx = m_vocab.size();
   
   m_vocab.push_back(w);
@@ -125,9 +126,9 @@ void Vocabulary::createHuffmanTree()
   // Allocate memory for the binary tree construction
   long long b, i, min1i, min2i, point[MAX_CODE_LENGTH];
   char code[MAX_CODE_LENGTH];
-  long long *count = (long long *)calloc(m_vocab.size() * 2 + 1, sizeof(long long));
-  long long *binary = (long long *)calloc(m_vocab.size() * 2 + 1, sizeof(long long));
-  long long *parent_node = (long long *)calloc(m_vocab.size() * 2 + 1, sizeof(long long));
+  std::unique_ptr<long long[]> count(new long long[m_vocab.size() * 2 + 1]);
+  std::unique_ptr<long long[]> binary(new long long[m_vocab.size() * 2 + 1]);
+  std::unique_ptr<long long[]> parent_node(new long long[m_vocab.size() * 2 + 1]);
   for (size_t a = 0; a < m_vocab.size(); a++) {
     m_vocab[a].code = (char *)calloc(MAX_CODE_LENGTH, sizeof(char));
     m_vocab[a].point = (int *)calloc(MAX_CODE_LENGTH, sizeof(int));
@@ -186,9 +187,6 @@ void Vocabulary::createHuffmanTree()
       m_vocab[a].point[i - b] = point[b] - m_vocab.size();
     }
   }
-  free(count);
-  free(binary);
-  free(parent_node);
 }
 
 void Vocabulary::save(FILE * fout) const
