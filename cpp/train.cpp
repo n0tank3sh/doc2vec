@@ -7,7 +7,8 @@
 std::string train_file, output_file;
 bool cbow = true;
 int window = 5, min_count = 1, num_threads = 4;
-int hs = 1, negtive = 0;
+bool hs = 1;
+int negative = 0;
 long long dim = 100, iter = 50;
 real alpha = 0.025, sample = 1e-3;
 
@@ -71,7 +72,7 @@ int get_optarg(int argc, char **argv)
   if ((i = ArgPos((char *)"-train", argc, argv)) > 0) train_file = argv[i + 1];
   if ((i = ArgPos((char *)"-cbow", argc, argv)) > 0) cbow = atoi(argv[i + 1]) ? true : false;
   if ((i = ArgPos((char *)"-hs", argc, argv)) > 0) hs = atoi(argv[i + 1]);
-  if ((i = ArgPos((char *)"-negtive", argc, argv)) > 0) negtive = atoi(argv[i + 1]);
+  if ((i = ArgPos((char *)"-negative", argc, argv)) > 0) negative = atoi(argv[i + 1]);
   if (cbow) alpha = 0.05;
   if ((i = ArgPos((char *)"-alpha", argc, argv)) > 0) alpha = atof(argv[i + 1]);
   if ((i = ArgPos((char *)"-output", argc, argv)) > 0) output_file = argv[i + 1];
@@ -84,7 +85,7 @@ int get_optarg(int argc, char **argv)
 }
 
 int main(int argc, char **argv)
-{
+{ 
   if (argc == 1 || get_optarg(argc, argv) < 0)
   {
     usage();
@@ -97,7 +98,7 @@ int main(int argc, char **argv)
   }
 
   Doc2Vec doc2vec;
-  doc2vec.train(train_file, dim, cbow, hs, negtive, iter, window, alpha, sample, min_count, num_threads);
+  doc2vec.train(train_file, dim, cbow, hs, negative, iter, window, alpha, sample, min_count, num_threads);
   fprintf(stderr, "\nWrite model to %s\n", output_file.c_str());
   doc2vec.save(fout);
   fclose(fout);

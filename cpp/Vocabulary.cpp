@@ -19,15 +19,6 @@ Vocabulary::Vocabulary(const std::string & train_file, int min_count, bool docta
   if(!m_doctag) createHuffmanTree();
 }
 
-Vocabulary::~Vocabulary()
-{
-  for (auto & wd : m_vocab) {
-    free(wd.word);
-    free(wd.point);
-    free(wd.code);
-  }
-}
-
 // Returns position of a word in the vocabulary; if the word is not found, returns -1
 long long Vocabulary::searchVocab(const std::string & word) const
 {
@@ -41,17 +32,14 @@ void Vocabulary::loadFromTrainFile(const std::string & train_file)
   TaggedBrownCorpus corpus(train_file);
   m_vocab.clear();
   m_vocab_hash.clear();
-  if(!m_doctag) addWordToVocab("</s>");
+  if(!m_doctag) addWordToVocab("</s>", 0);
   TaggedDocument * doc = NULL;
   while ((doc = corpus.next()) != NULL) {
     if(m_doctag) {  //for doc tag
       auto & word = doc->m_tag;
       m_train_words++;
       long long i = searchVocab(word);
-      if (i == -1) {
-        long long a = addWordToVocab(word);
-        m_vocab[a].cn = 1;
-      }
+      if (i == -1) addWordToVocab(word);
     } else { // for doc words
       for(size_t k = 0; k < doc->m_words.size(); k++){
         auto & word = doc->m_words[k];
@@ -62,10 +50,8 @@ void Vocabulary::loadFromTrainFile(const std::string & train_file)
           fflush(stderr);
         }
         long long i = searchVocab(word);
-        if (i == -1) {
-          long long a = addWordToVocab(word);
-          m_vocab[a].cn = 1;
-        } else m_vocab[i].cn++;
+        if (i == -1) addWordToVocab(word);
+	else m_vocab[i].cn++;
       }
       m_train_words--;
     }
@@ -78,18 +64,14 @@ void Vocabulary::loadFromTrainFile(const std::string & train_file)
   }
 }
 
-long long Vocabulary::addWordToVocab(const std::string & word)
+void Vocabulary::addWordToVocab(const std::string & word, size_t initial_count) 
 {
-  vocab_word_t w;
+  vocab_word_t w(initial_count);
   w.word = (char *)calloc(word.size() + 1, sizeof(char));
   strcpy(w.word, word.c_str());
-  w.cn = 0;
-  
-  long long idx = m_vocab.size();
-  
+    
+  m_vocab_hash[word] = m_vocab.size();
   m_vocab.push_back(w);
-  m_vocab_hash[word] = idx;
-  return idx;
 }
 
 // Sorts the vocabulary by frequency using word counts, frequent->infrequent
@@ -215,15 +197,17 @@ void Vocabulary::save(FILE * fout) const
 
 void Vocabulary::load(FILE * fin)
 {
-  long long size, dummy;
-  fread(&size, sizeof(long long), 1, fin);
-  fread(&m_train_words, sizeof(long long), 1, fin);
-  fread(&dummy, sizeof(long long), 1, fin);
+  size_t size, dummy;
+  fread(&size, sizeof(size_t), 1, fin);
+  fread(&m_train_words, sizeof(size_t), 1, fin);
+  fread(&dummy, sizeof(size_t), 1, fin);
   fread(&m_min_count, sizeof(int), 1, fin);
   fread(&m_doctag, sizeof(bool), 1, fin);
+
   m_vocab.clear();
-  for(size_t a = 0; a < size; a++)
-  {
+  m_vocab_hash.clear();
+  
+  for (size_t a = 0; a < size; a++) {
     vocab_word_t w;
     
     int wordlen;

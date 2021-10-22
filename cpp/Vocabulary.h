@@ -9,11 +9,18 @@
 
 struct vocab_word_t
 {
+  vocab_word_t(size_t _cn = 1) : cn(_cn) { }
+  ~vocab_word_t() {
+    free(word);
+    free(point);
+    free(code);
+  }
+
   size_t cn; //frequency of word
-  int *point; //Huffman tree(n leaf + n inner node, exclude root) path. (root, leaf], node index
-  char *word; //word string
-  char *code; //Huffman code. (root, leaf], 0/1 codes
-  char codelen; //Hoffman code length
+  int *point = 0; //Huffman tree(n leaf + n inner node, exclude root) path. (root, leaf], node index
+  char *word = 0; //word string
+  char *code = 0; //Huffman code. (root, leaf], 0/1 codes
+  char codelen = 0; //Hoffman code length
 };
 
 class Vocabulary
@@ -21,7 +28,6 @@ class Vocabulary
 public:
   Vocabulary() : m_min_count(1), m_doctag(false) { }
   Vocabulary(const std::string & train_file, int min_count = 5, bool doctag = false);
-  ~Vocabulary();
 
   long long searchVocab(const std::string & word) const;
   long long getVocabSize() const { return m_vocab.size(); }
@@ -34,7 +40,7 @@ public:
 
 private:
   void loadFromTrainFile(const std::string & train_file);
-  long long addWordToVocab(const std::string & word);
+  void addWordToVocab(const std::string & word, size_t initial_count = 1);
   void sortVocab();
   void createHuffmanTree();
 

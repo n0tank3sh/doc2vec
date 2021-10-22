@@ -8,8 +8,8 @@
 class NN
 {
 public:
-  NN() : m_hs(0), m_negtive(0), m_vocab_size(0), m_corpus_size(0), m_dim(0) { }
-  NN(size_t vocab_size, size_t corpus_size, size_t dim, int hs, int negtive);
+  NN() : m_hs(false), m_negative(false), m_vocab_size(0), m_corpus_size(0), m_dim(0) { }
+  NN(size_t vocab_size, size_t corpus_size, size_t dim, bool hs, int negative);
   ~NN();
 
   void save(FILE * fout) const;
@@ -18,8 +18,8 @@ public:
 
   size_t dim() const { return m_dim; }
   
-  int m_hs;
-  int m_negtive;
+  bool m_hs;
+  int m_negative;
   real *m_syn0 = nullptr, *m_dsyn0 = nullptr, *m_syn1 = nullptr, *m_syn1neg = nullptr;
   size_t m_vocab_size, m_corpus_size;
   //no need to flush to disk
