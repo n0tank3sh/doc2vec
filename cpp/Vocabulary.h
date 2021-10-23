@@ -6,21 +6,44 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include <cstring>
 
 struct vocab_word_t
 {
-  vocab_word_t(size_t _cn = 1) : cn(_cn) { }
+  vocab_word_t() : cn(0), codelen(0), point(0), code(0) { }
+  vocab_word_t(const std::string & _word, size_t _cn = 1) : word(_word), cn(_cn), codelen(0), point(0), code(0) { }
+  vocab_word_t(const vocab_word_t & other) : word(other.word), cn(other.cn), codelen(other.codelen) {
+    point = (int *)malloc(codelen * sizeof(int));
+    code = (char *)malloc(codelen * sizeof(char));
+    memcpy(point, other.point, codelen * sizeof(int));
+    memcpy(code, other.code, codelen * sizeof(char));
+  }  
   ~vocab_word_t() {
-    free(word);
     free(point);
     free(code);
   }
+  vocab_word_t & operator=(const vocab_word_t & other) {
+    if (&other != this) {
+      word = other.word;
+      cn = other.cn;
+      codelen = other.codelen;
+      
+      free(point);
+      free(code);
 
-  size_t cn; //frequency of word
-  int *point = 0; //Huffman tree(n leaf + n inner node, exclude root) path. (root, leaf], node index
-  char *word = 0; //word string
-  char *code = 0; //Huffman code. (root, leaf], 0/1 codes
-  char codelen = 0; //Hoffman code length
+      point = (int *)malloc(codelen * sizeof(int));
+      code = (char *)malloc(codelen * sizeof(char));
+      memcpy(point, other.point, codelen * sizeof(int));
+      memcpy(code, other.code, codelen * sizeof(char));
+    }
+    return *this;
+  }
+
+  std::string word; // word string
+  size_t cn; // frequency of word
+  char codelen; // Hoffman code length
+  int *point; // Huffman tree(n leaf + n inner node, exclude root) path. (root, leaf], node index
+  char *code; // Huffman code. (root, leaf], 0/1 codes
 };
 
 class Vocabulary

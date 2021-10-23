@@ -1,5 +1,6 @@
 #ifndef TRAIN_MODEL_THREAD_H
 #define TRAIN_MODEL_THREAD_H
+
 #include "common_define.h"
 
 #include <vector>
@@ -16,7 +17,6 @@ friend class Doc2Vec;
 public:
   TrainModelThread(long long id, Doc2Vec * doc2vec,
 		   std::unique_ptr<TaggedBrownCorpus> sub_corpus, bool infer = false);
-  ~TrainModelThread();
 
   void train();
 
@@ -28,7 +28,7 @@ private:
   void trainSampleSg(long long central, long long context_start, long long context_end);
   void trainDocument();
   bool down_sample(long long cn);
-  long long negtive_sample();
+  long long negative_sample();
   real doc_likelihood();
   real context_likelihood(long long sentence_position);
   real likelihoodPair(long long central, real * context_vector);
@@ -43,12 +43,11 @@ private:
 
   std::vector<long long> m_sen;
   std::vector<long long> m_sen_nosample;
-  long long m_sentence_nosample_length;
-  real * m_doc_vector = nullptr;
-  long long m_word_count;
-  long long m_last_word_count;
-  real *m_neu1;
-  real *m_neu1e;
+  real * m_doc_vector;
+  long long m_word_count = 0;
+  long long m_last_word_count = 0;
+  std::unique_ptr<real[]> m_neu1;
+  std::unique_ptr<real[]> m_neu1e;
 };
 
 #endif

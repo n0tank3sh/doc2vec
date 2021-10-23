@@ -1,5 +1,6 @@
 #ifndef DOC2VEC_H
 #define DOC2VEC_H
+
 #include "common_define.h"
 
 #include <vector>
@@ -16,25 +17,23 @@ struct knn_item_t;
 
 class Doc2Vec
 {
-friend class TrainModelThread;
-friend class WMD;
-friend class UnWeightedDocument;
-friend class WeightedDocument;
+  friend class TrainModelThread;  
 public:
   Doc2Vec();
   ~Doc2Vec();
-
+  
   void train(const std::string & train_file,
-    size_t dim, bool cbow, int hs, int negtive,
+    size_t dim, bool cbow, bool hs, int negative,
     int iter, int window,
     real alpha, real sample,
     int min_count, int threads);
 
   size_t dim() const;
-  WMD * wmd() { return m_wmd.get(); }
-  Vocabulary * wvocab() { return m_word_vocab.get(); }
-  Vocabulary * dvocab() { return m_doc_vocab.get(); }
-  NN * nn() { return m_nn.get(); };
+  WMD & wmd() { return *m_wmd; }
+  const Vocabulary & wvocab() const { return *m_word_vocab; }
+  const Vocabulary & dvocab() const { return *m_doc_vocab; }
+  NN & nn() { return *m_nn; };
+  TaggedBrownCorpus & brownCorpus() { return *m_brown_corpus; }
 
   real doc_likelihood(TaggedDocument & doc, int skip = -1);
   real context_likelihood(TaggedDocument & doc, int sentence_position);
@@ -55,10 +54,19 @@ public:
   void save(FILE * fout) const;
   void load(FILE * fin);
 
+  real getStartAlpha() const { return m_start_alpha; }
+  size_t iter() const { return m_iter; }
+  real getAlpha() const { return m_alpha; }
+  void setAlpha(float a) { m_alpha = a; }
+  void updateWordCountActual(long long d) { m_word_count_actual += d; }
+  bool useHS() const { return m_hs; }
+  int negative() const { return m_negative; }
+  const int * getNegativeSampleTable() const { return m_negative_sample_table.get(); }
+
  private:
   void initExpTable();
   void initNegTable();
-  void initTrainModelThreads(const std::string & train_file, int threads, int iter);
+  void initTrainModelThreads(const std::string & train_file, int threads, int iter, std::vector<TrainModelThread *> & trainModelThreads);
   bool obj_knn_objs(const std::string & search, real* src,
     bool search_is_word, bool target_is_word,
     knn_item_t * knns, int k);
@@ -69,8 +77,8 @@ public:
   std::unique_ptr<WMD> m_wmd;
   
   bool m_cbow = true;
-  int m_hs;
-  int m_negtive;
+  bool m_hs;
+  int m_negative;
   int m_window;
   real m_start_alpha; //fix lr
   real m_sample;
@@ -80,9 +88,8 @@ public:
   std::unique_ptr<TaggedBrownCorpus> m_brown_corpus;
   real m_alpha; //working lr
   long long m_word_count_actual;
-  real * m_expTable = nullptr;
-  int * m_negtive_sample_table = nullptr;
-  std::vector<TrainModelThread *> m_trainModelThreads;
+  std::unique_ptr<real[]> m_expTable;
+  std::unique_ptr<int[]> m_negative_sample_table;
 };
 
 struct knn_item_t

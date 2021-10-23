@@ -6,7 +6,7 @@
 #define MAX_CODE_LENGTH 40
 #define MAX_DOC2VEC_KNN 2000
 
-const int negtive_sample_table_size = 1e8;
+const int negative_sample_table_size = 1e8;
 
 typedef float real;
 

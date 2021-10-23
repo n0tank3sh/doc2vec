@@ -66,10 +66,7 @@ void Vocabulary::loadFromTrainFile(const std::string & train_file)
 
 void Vocabulary::addWordToVocab(const std::string & word, size_t initial_count) 
 {
-  vocab_word_t w(initial_count);
-  w.word = (char *)calloc(word.size() + 1, sizeof(char));
-  strcpy(w.word, word.c_str());
-    
+  vocab_word_t w(word, initial_count);    
   m_vocab_hash[word] = m_vocab.size();
   m_vocab.push_back(w);
 }
@@ -177,10 +174,9 @@ void Vocabulary::save(FILE * fout) const
   fwrite(&m_min_count, sizeof(int), 1, fout);
   fwrite(&m_doctag, sizeof(bool), 1, fout);
   for (auto & w : m_vocab) {
-    int wordlen;
-    wordlen = strlen(w.word);
-    fwrite(&wordlen, sizeof(int), 1, fout);
-    fwrite(w.word, sizeof(char), wordlen, fout);
+    unsigned int wordlen = w.word.size();
+    fwrite(&wordlen, sizeof(unsigned int), 1, fout);
+    fwrite(w.word.data(), sizeof(char), wordlen, fout);
     fwrite(&(w.cn), sizeof(size_t), 1, fout);
     if(!m_doctag)
     {
@@ -203,16 +199,20 @@ void Vocabulary::load(FILE * fin)
   m_vocab.clear();
   m_vocab_hash.clear();
   
-  for (size_t a = 0; a < size; a++) {
-    vocab_word_t w;
-    
-    int wordlen;
+  for (size_t a = 0; a < size; a++) {    
+    unsigned int wordlen;
     fread(&wordlen, sizeof(int), 1, fin);
-    w.word = (char *)calloc(wordlen + 1, sizeof(char));
-    fread(w.word, sizeof(char), wordlen, fin);
-    fread(&(w.cn), sizeof(size_t), 1, fin);
-    if(!m_doctag)
-    {
+
+    char tmp[wordlen + 1];
+    fread(tmp, sizeof(char), wordlen, fin);
+    tmp[wordlen] = 0;       
+
+    size_t cn;
+    fread(&cn, sizeof(size_t), 1, fin);
+    
+    vocab_word_t w(tmp, cn);
+
+    if (!m_doctag) {
       fread(&(w.codelen), sizeof(char), 1, fin);
       w.point = (int *)calloc(w.codelen, sizeof(int));
       fread(w.point, sizeof(int), w.codelen, fin);
