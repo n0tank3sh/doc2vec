@@ -129,23 +129,20 @@ WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
   UnWeightedDocument(doc2vec, doc)
 {
   long long word_idx;
-  real * doc_vector = nullptr, * infer_vector = nullptr;
   std::unordered_map<long long, real> scores;
-  posix_memalign((void **)&doc_vector, 128, doc2vec->nn().dim() * sizeof(real));
-  posix_memalign((void **)&infer_vector, 128, doc2vec->nn().dim() * sizeof(real));
-  doc2vec->infer_doc(*doc, doc_vector);
+  std::unique_ptr<real[]> doc_vector(new real[doc2vec->nn().dim()]);
+  std::unique_ptr<real[]> infer_vector(new real[doc2vec->nn().dim()]);
+  doc2vec->infer_doc(*doc, doc_vector.get());
   for(size_t a = 0; a < doc->m_words.size(); a++)
   {
     auto & word = doc->m_words[a];
     word_idx = doc2vec->wvocab().searchVocab(word);
     if (word_idx == -1) continue;
     if (word_idx == 0) break;
-    doc2vec->infer_doc(*doc, infer_vector, a);
-    real sim = doc2vec->similarity(doc_vector, infer_vector);
+    doc2vec->infer_doc(*doc, infer_vector.get(), a);
+    real sim = doc2vec->similarity(doc_vector.get(), infer_vector.get());
     scores[word_idx] = pow(1.0 - sim, 1.5);
   }
-  free(doc_vector);
-  free(infer_vector);
 
   real sum = 0;
   for (auto & idx : m_words_idx) {

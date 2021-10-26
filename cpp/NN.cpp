@@ -9,11 +9,8 @@ NN::NN(size_t vocab_size, size_t corpus_size, size_t dim, bool hs, int negative)
 {
   unsigned long long next_random = 1;
   
-  posix_memalign((void **)&m_syn0, 128, (long long)m_vocab_size * m_dim * sizeof(real));
-  if (m_syn0 == NULL) {fprintf(stderr, "Memory allocation failed\n"); exit(1);}
-
-  posix_memalign((void **)&m_dsyn0, 128, (long long)m_corpus_size * m_dim * sizeof(real));
-  if (m_dsyn0 == NULL) {fprintf(stderr, "Memory allocation failed\n"); exit(1);}
+  m_syn0 = std::unique_ptr<real[]>(new real[m_vocab_size * m_dim]);
+  m_dsyn0 = std::unique_ptr<real[]>(new real[m_corpus_size * m_dim]);
   
   for (size_t a = 0; a < m_vocab_size; a++) {
     for (size_t b = 0; b < m_dim; b++) {
@@ -30,27 +27,13 @@ NN::NN(size_t vocab_size, size_t corpus_size, size_t dim, bool hs, int negative)
   }
 
   if (m_hs) {
-    posix_memalign((void **)&m_syn1, 128, (long long)m_vocab_size * m_dim * sizeof(real));
-    if (m_syn1 == NULL) {fprintf(stderr, "Memory allocation failed\n"); exit(1);}
-
-    std::fill(m_syn1, m_syn1 + m_vocab_size * m_dim, 0);    
+    m_syn1 = std::unique_ptr<real[]>(new real[m_vocab_size * m_dim]);
+    std::fill(m_syn1.get(), m_syn1.get() + m_vocab_size * m_dim, 0);    
   }
   if (m_negative) {
-    posix_memalign((void **)&m_syn1neg, 128, (long long)m_vocab_size * m_dim * sizeof(real));
-    if (m_syn1neg == NULL) {fprintf(stderr, "Memory allocation failed\n"); exit(1);}
-
-    std::fill(m_syn1neg, m_syn1neg + m_vocab_size * m_dim, 0);
+    m_syn1neg = std::unique_ptr<real[]>(new real[m_vocab_size * m_dim]);
+    std::fill(m_syn1neg.get(), m_syn1neg.get() + m_vocab_size * m_dim, 0);
   }
-}
-
-NN::~NN()
-{
-  if(m_syn0) free(m_syn0);
-  if(m_dsyn0) free(m_dsyn0);
-  if(m_syn1) free(m_syn1);
-  if(m_syn1neg) free(m_syn1neg);
-  if(m_syn0norm) free(m_syn0norm);
-  if(m_dsyn0norm) free(m_dsyn0norm);
 }
 
 void NN::save(FILE * fout) const
@@ -62,10 +45,10 @@ void NN::save(FILE * fout) const
   fwrite(&m_vocab_size, sizeof(size_t), 1, fout);
   fwrite(&m_corpus_size, sizeof(size_t), 1, fout);
   fwrite(&m_dim, sizeof(size_t), 1, fout);
-  fwrite(m_syn0, sizeof(real), m_vocab_size * m_dim, fout);
-  fwrite(m_dsyn0, sizeof(real), m_corpus_size * m_dim, fout);
-  if (m_hs) fwrite(m_syn1, sizeof(real), m_vocab_size * m_dim, fout);
-  if (m_negative) fwrite(m_syn1neg, sizeof(real), m_vocab_size * m_dim, fout);
+  fwrite(m_syn0.get(), sizeof(real), m_vocab_size * m_dim, fout);
+  fwrite(m_dsyn0.get(), sizeof(real), m_corpus_size * m_dim, fout);
+  if (m_hs) fwrite(m_syn1.get(), sizeof(real), m_vocab_size * m_dim, fout);
+  if (m_negative) fwrite(m_syn1neg.get(), sizeof(real), m_vocab_size * m_dim, fout);
 }
 
 void NN::load(FILE * fin)
@@ -78,34 +61,32 @@ void NN::load(FILE * fin)
   fread(&m_dim, sizeof(size_t), 1, fin);
 
   m_hs = hs;
-  
-  posix_memalign((void **)&m_syn0, 128, (long long)m_vocab_size * m_dim * sizeof(real));
-  if (m_syn0 == NULL) {fprintf(stderr, "Memory allocation failed\n"); exit(1);}
-  fread(m_syn0, sizeof(real), m_vocab_size * m_dim, fin);
 
-  posix_memalign((void **)&m_dsyn0, 128, (long long)m_corpus_size * m_dim * sizeof(real));
-  if (m_dsyn0 == NULL) {fprintf(stderr, "Memory allocation failed\n"); exit(1);}
-  fread(m_dsyn0, sizeof(real), m_corpus_size * m_dim, fin);
+  m_syn0 = std::unique_ptr<real[]>(new real[m_vocab_size * m_dim]);
+  fread(m_syn0.get(), sizeof(real), m_vocab_size * m_dim, fin);
+
+  m_dsyn0 = std::unique_ptr<real[]>(new real[m_corpus_size * m_dim]);
+  fread(m_dsyn0.get(), sizeof(real), m_corpus_size * m_dim, fin);
 
   if (m_hs) {
-    posix_memalign((void **)&m_syn1, 128, (long long)m_vocab_size * m_dim * sizeof(real));
-    if (m_syn1 == NULL) {fprintf(stderr, "Memory allocation failed\n"); exit(1);}
-    fread(m_syn1, sizeof(real), m_vocab_size * m_dim, fin);
+    m_syn1 = std::unique_ptr<real[]>(new real[m_vocab_size * m_dim]);
+    fread(m_syn1.get(), sizeof(real), m_vocab_size * m_dim, fin);
+  } else {
+    m_syn1.reset(nullptr);
   }
 
   if (m_negative) {
-    posix_memalign((void **)&m_syn1neg, 128, (long long)m_vocab_size * m_dim * sizeof(real));
-    if (m_syn1neg == NULL) {fprintf(stderr, "Memory allocation failed\n"); exit(1);}
-    fread(m_syn1neg, sizeof(real), m_vocab_size * m_dim, fin);
+    m_syn1neg = std::unique_ptr<real[]>(new real[m_vocab_size * m_dim]);
+    fread(m_syn1neg.get(), sizeof(real), m_vocab_size * m_dim, fin);
+  } else {
+    m_syn1neg.reset(nullptr);
   }
 }
 
 void NN::norm()
 {
-  posix_memalign((void **)&m_syn0norm, 128, (long long)m_vocab_size * m_dim * sizeof(real));
-  if (m_syn0norm == NULL) {fprintf(stderr, "Memory allocation failed\n"); exit(1);}
-  posix_memalign((void **)&m_dsyn0norm, 128, (long long)m_corpus_size * m_dim * sizeof(real));
-  if (m_dsyn0norm == NULL) {fprintf(stderr, "Memory allocation failed\n"); exit(1);}
+  m_syn0norm = std::unique_ptr<real[]>(new real[m_vocab_size * m_dim]);
+  m_dsyn0norm = std::unique_ptr<real[]>(new real[m_corpus_size * m_dim]);
   
   for (size_t a = 0; a < m_vocab_size; a++) {
     real len = 0;

@@ -85,15 +85,14 @@ void Doc2Vec::train(const std::string & train_file,
   initTrainModelThreads(train_file, threads, iter, trainModelThreads);
 
   fprintf(stderr, "Train with %d threads\n", (int)trainModelThreads.size());
-  pthread_t *pt = (pthread_t *)malloc(trainModelThreads.size() * sizeof(pthread_t));
-  for(size_t a = 0; a < trainModelThreads.size(); a++) {
+  std::unique_ptr<pthread_t[]> pt(new pthread_t[trainModelThreads.size()]);
+  for (size_t a = 0; a < trainModelThreads.size(); a++) {
     pthread_create(&pt[a], NULL, trainModelThread, (void *)trainModelThreads[a]);
   }
   for (size_t a = 0; a < trainModelThreads.size(); a++) {
     pthread_join(pt[a], NULL);
     delete trainModelThreads[a];
   }
-  free(pt);
 
   // for(size_t i =  0; i < m_trainModelThreads.size(); i++) m_trainModelThreads[i]->m_corpus->close();
   // m_brown_corpus->close();
@@ -130,103 +129,91 @@ void Doc2Vec::initTrainModelThreads(const std::string & train_file, int threads,
   fprintf(stderr, "corpus size: %lld\n", m_doc_vocab->size() - 1);
 }
 
-bool Doc2Vec::obj_knn_objs(const std::string & search, real * src,
+bool Doc2Vec::obj_knn_objs(const std::string & search, const real * src,
   bool search_is_word, bool target_is_word,
-  knn_item_t * knns, int k)
+  knn_item_t * knns, size_t k)
 {
-  long long a = -1, b, c, target_size;
-  real * search_vectors, * target, * target_vectors;
-  Vocabulary * search_vocab, * target_vocab;
-  search_vocab = search_is_word ? m_word_vocab.get() : m_doc_vocab.get();
-  search_vectors = search_is_word ? m_nn->m_syn0norm : m_nn->m_dsyn0norm;
-  target_vectors = target_is_word ? m_nn->m_syn0norm : m_nn->m_dsyn0norm;
-  target_size = target_is_word ? m_nn->m_vocab_size : m_nn->m_corpus_size;
-  target_vocab = target_is_word ? m_word_vocab.get() : m_doc_vocab.get();
-  if(!src) {
+  const Vocabulary * search_vocab = search_is_word ? m_word_vocab.get() : m_doc_vocab.get();
+  const real * search_vectors = search_is_word ? m_nn->get_syn0norm() : m_nn->get_dsyn0norm();
+  const real * target_vectors = target_is_word ? m_nn->get_syn0norm() : m_nn->get_dsyn0norm();
+  size_t target_size = target_is_word ? m_nn->m_vocab_size : m_nn->m_corpus_size;
+  const Vocabulary * target_vocab = target_is_word ? m_word_vocab.get() : m_doc_vocab.get();
+  long long a;
+  if (!src) {
     a = search_vocab->searchVocab(search);
-    if(a < 0) {
+    if (a < 0) {
       return false;
     }
     src = &(search_vectors[a * m_nn->dim()]);
   }
-  for(b = 0, c = 0; b < target_size; b++)
+  for (size_t b = 0, c = 0; b < target_size; b++)
   {
-    if(search_is_word == target_is_word && a == b) continue;
-    target = &(target_vectors[b * m_nn->dim()]);
-    if(c < k){
+    if (search_is_word == target_is_word && a == b) continue;
+    auto target = &(target_vectors[b * m_nn->dim()]);
+    if (c < k) {
       knns[c].similarity = similarity(src, target);
       knns[c].idx = b;
       c++;
-      if(c == k) top_init(knns, k);
+      if (c == k) top_init(knns, k);
     }
     else top_collect(knns, k, b, similarity(src, target));
   }
   top_sort(knns, k);
   auto & target_words = target_vocab->getWords();
-  for(b = 0; b < k; b++) knns[b].word = target_words[knns[b].idx].word;
+  for (size_t b = 0; b < k; b++) knns[b].word = target_words[knns[b].idx].word;
   return true;
 }
 
-bool Doc2Vec::word_knn_words(const std::string & search, knn_item_t * knns, int k)
+bool Doc2Vec::word_knn_words(const std::string & search, knn_item_t * knns, size_t k)
 {
   return obj_knn_objs(search, NULL, true, true, knns, k);
 }
 
-bool Doc2Vec::doc_knn_docs(const std::string & search, knn_item_t * knns, int k)
+bool Doc2Vec::doc_knn_docs(const std::string & search, knn_item_t * knns, size_t k)
 {
   return obj_knn_objs(search, NULL, false, false, knns, k);
 }
 
-bool Doc2Vec::word_knn_docs(const std::string & search, knn_item_t * knns, int k)
+bool Doc2Vec::word_knn_docs(const std::string & search, knn_item_t * knns, size_t k)
 {
   return obj_knn_objs(search, NULL, true, false, knns, k);
 }
 
-void Doc2Vec::sent_knn_words(TaggedDocument & doc, knn_item_t * knns, int k)
+void Doc2Vec::sent_knn_words(TaggedDocument & doc, knn_item_t * knns, size_t k)
 {
-  real * infer_vector = 0;
-  posix_memalign((void **)&infer_vector, 128, m_nn->dim() * sizeof(real));
-  
-  sent_knn_words(doc, knns, k, infer_vector);
-  
-  free(infer_vector);
+  std::unique_ptr<real[]> infer_vector(new real[m_nn->dim()]);  
+  sent_knn_words(doc, knns, k, infer_vector.get());  
 }
 
-void Doc2Vec::sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, int k)
+void Doc2Vec::sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, size_t k)
 {
-  real * infer_vector = 0;
-  posix_memalign((void **)&infer_vector, 128, m_nn->dim() * sizeof(real));
-  
-  sent_knn_docs(doc, knns, k, infer_vector);
-  
-  free(infer_vector);
+  std::unique_ptr<real[]> infer_vector(new real[m_nn->dim()]);    
+  sent_knn_docs(doc, knns, k, infer_vector.get());
 }
 
-void Doc2Vec::sent_knn_words(TaggedDocument & doc, knn_item_t * knns, int k, real * infer_vector)
+void Doc2Vec::sent_knn_words(TaggedDocument & doc, knn_item_t * knns, size_t k, real * infer_vector)
 {
   infer_doc(doc, infer_vector);
   obj_knn_objs("", infer_vector, false, true, knns, k);
 }
 
-void Doc2Vec::sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, int k, real * infer_vector)
+void Doc2Vec::sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, size_t k, real * infer_vector)
 {
   infer_doc(doc, infer_vector);
   obj_knn_objs("", infer_vector, false, false, knns, k);
 }
 
-real Doc2Vec::similarity(real * src, real * target)
+real Doc2Vec::similarity(const real * src, const real * target) const
 {
-  long long a;
   real dot = 0;
-  for(a = 0; a < m_nn->dim(); a++) dot += src[a] * target[a];
+  for (size_t a = 0; a < m_nn->dim(); a++) dot += src[a] * target[a];
   return dot;
 }
 
-real Doc2Vec::distance(real * src, real * target)
+real Doc2Vec::distance(const real * src, const real * target) const
 {
-  long long a;
   real dis = 0;
-  for(a = 0; a < m_nn->dim(); a++) dis += pow(src[a] - target[a], 2);
+  for (size_t a = 0; a < m_nn->dim(); a++) dis += pow(src[a] - target[a], 2);
   return sqrt(dis);
 }
 
@@ -352,14 +339,14 @@ static void heap_adjust(knn_item_t * knns, int s, int m)
   knns[s].idx = idx;
 }
 
-void top_init(knn_item_t * knns, int k)
+void top_init(knn_item_t * knns, size_t k)
 {
   for(int i = k / 2 - 1; i >= 0; i--) {
     heap_adjust(knns, i, k);
   }
 }
 
-void top_collect(knn_item_t * knns, int k, long long idx, real similarity)
+void top_collect(knn_item_t * knns, size_t k, long long idx, real similarity)
 {
   if(similarity <= knns[0].similarity) return;
   knns[0].similarity = similarity;
@@ -367,7 +354,7 @@ void top_collect(knn_item_t * knns, int k, long long idx, real similarity)
   heap_adjust(knns, 0, k);
 }
 
-void top_sort(knn_item_t * knns, int k)
+void top_sort(knn_item_t * knns, size_t k)
 {
   real similarity;
   long long idx;

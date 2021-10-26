@@ -38,18 +38,18 @@ public:
   real doc_likelihood(TaggedDocument & doc, int skip = -1);
   real context_likelihood(TaggedDocument & doc, int sentence_position);
   void infer_doc(TaggedDocument & doc, real * vec, int skip = -1);
-  bool word_knn_words(const std::string & search, knn_item_t * knns, int k);
-  bool doc_knn_docs(const std::string & search, knn_item_t * knns, int k);
-  bool word_knn_docs(const std::string & search, knn_item_t * knns, int k);
+  bool word_knn_words(const std::string & search, knn_item_t * knns, size_t k);
+  bool doc_knn_docs(const std::string & search, knn_item_t * knns, size_t k);
+  bool word_knn_docs(const std::string & search, knn_item_t * knns, size_t k);
 
-  void sent_knn_words(TaggedDocument & doc, knn_item_t * knns, int k, real * infer_vector);
-  void sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, int k, real * infer_vector);
+  void sent_knn_words(TaggedDocument & doc, knn_item_t * knns, size_t k, real * infer_vector);
+  void sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, size_t k, real * infer_vector);
 
-  void sent_knn_words(TaggedDocument & doc, knn_item_t * knns, int k);
-  void sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, int k);
+  void sent_knn_words(TaggedDocument & doc, knn_item_t * knns, size_t k);
+  void sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, size_t k);
   
-  real similarity(real * src, real * target);
-  real distance(real * src, real * target);
+  real similarity(const real * src, const real * target) const;
+  real distance(const real * src, const real * target) const;
 
   void save(FILE * fout) const;
   void load(FILE * fin);
@@ -67,9 +67,9 @@ public:
   void initExpTable();
   void initNegTable();
   void initTrainModelThreads(const std::string & train_file, int threads, int iter, std::vector<TrainModelThread *> & trainModelThreads);
-  bool obj_knn_objs(const std::string & search, real* src,
+  bool obj_knn_objs(const std::string & search, const real * src,
     bool search_is_word, bool target_is_word,
-    knn_item_t * knns, int k);
+    knn_item_t * knns, size_t k);
 
   std::unique_ptr<Vocabulary> m_word_vocab;
   std::unique_ptr<Vocabulary> m_doc_vocab;
@@ -98,7 +98,7 @@ struct knn_item_t
   long long idx;
   real similarity;
 };
-void top_init(knn_item_t * knns, int k);
-void top_collect(knn_item_t * knns, int k, long long idx, real similarity);
-void top_sort(knn_item_t * knns, int k);
+void top_init(knn_item_t * knns, size_t k);
+void top_collect(knn_item_t * knns, size_t k, long long idx, real similarity);
+void top_sort(knn_item_t * knns, size_t k);
 #endif
