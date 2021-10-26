@@ -20,3 +20,20 @@
 - check return value from output file creation
 - return 1 on argument error in train.cpp
 
+## 2021-10-19
+
+- Use unordered_set and unordered_map instead of set and map
+	
+
+## 2021-10-21
+
+- Instead of ftell() use ftello(), which is quaranteed to be 64 bit
+	
+
+## 2021-10-23
+
+- Enable fast-math, which almost doubles the performance
+
+## 2021-10-27
+
+- Remove aligned allocations, since they have no effect on performance
