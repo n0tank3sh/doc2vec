@@ -85,7 +85,7 @@ void Doc2Vec::train(const std::string & train_file,
   initTrainModelThreads(train_file, threads, iter, trainModelThreads);
 
   fprintf(stderr, "Train with %d threads\n", (int)trainModelThreads.size());
-  std::unique_ptr<pthread_t[]> pt(new pthread_t[trainModelThreads.size()]);
+  auto pt = std::make_unique<pthread_t[]>(trainModelThreads.size());
   for (size_t a = 0; a < trainModelThreads.size(); a++) {
     pthread_create(&pt[a], NULL, trainModelThread, (void *)trainModelThreads[a]);
   }
