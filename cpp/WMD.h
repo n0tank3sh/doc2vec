@@ -2,6 +2,7 @@
 #define WMD_H
 #include "common_define.h"
 
+#include <limits>
 #include <cstdio>
 
 class TaggedDocument;
