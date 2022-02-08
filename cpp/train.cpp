@@ -1,9 +1,11 @@
 #include "common_define.h"
-#include "Doc2Vec.h"
+#include "Model.h"
 
 #include <cstring>
 
-//setup parameters
+using namespace doc2vec;
+
+// setup parameters
 std::string train_file, output_file;
 bool cbow = true;
 int window = 5, min_count = 1, num_threads = 4;
@@ -97,7 +99,7 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  Doc2Vec doc2vec;
+  Model doc2vec;
   doc2vec.train(train_file, dim, cbow, hs, negative, iter, window, alpha, sample, min_count, num_threads);
   fprintf(stderr, "\nWrite model to %s\n", output_file.c_str());
   doc2vec.save(fout);

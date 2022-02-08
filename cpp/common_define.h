@@ -1,5 +1,5 @@
-#ifndef COMMON_DEFINE_H
-#define COMMON_DEFINE_H
+#ifndef _DOC2VEC_COMMON_DEFINE_H_
+#define _DOC2VEC_COMMON_DEFINE_H_
 
 #define EXP_TABLE_SIZE 1000
 #define MAX_EXP 6

@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <memory>
 
+using namespace doc2vec;
+
 static inline bool vocabCompare(const vocab_word_t & a, const vocab_word_t & b)
 {
     return a.cn > b.cn;

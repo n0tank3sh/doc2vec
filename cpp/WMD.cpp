@@ -2,10 +2,11 @@
 #include "TaggedBrownCorpus.h"
 #include "Vocabulary.h"
 #include "NN.h"
-#include "Doc2Vec.h"
+#include "Model.h"
 
-// //////////////WMD/////////////////////////////
-WMD::WMD(Doc2Vec * doc2vec) : m_doc2vec(doc2vec)
+using namespace doc2vec;
+
+WMD::WMD(Model * doc2vec) : m_doc2vec(doc2vec)
 {
   m_corpus = new UnWeightedDocument*[m_doc2vec->nn().m_corpus_size];
   for(size_t a = 0; a < m_doc2vec->nn().m_corpus_size; a++) m_corpus[a] = NULL;  

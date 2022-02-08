@@ -1,4 +1,4 @@
-#include "Doc2Vec.h"
+#include "Model.h"
 #include "NN.h"
 #include "Vocabulary.h"
 #include "WMD.h"
@@ -6,6 +6,51 @@
 #include "TaggedBrownCorpus.h"
 
 #include <cmath>
+
+namespace doc2vec {
+  static void heap_adjust(knn_item_t * knns, int s, int m) {
+    real similarity = knns[s].similarity;
+    long long idx = knns[s].idx;
+    for(int j = 2 * s + 1; j < m; j = 2 * j + 1) {
+      if(j < m - 1 && knns[j].similarity > knns[j + 1].similarity) j++;
+      if(similarity < knns[j].similarity) break;
+      knns[s].similarity = knns[j].similarity;
+      knns[s].idx = knns[j].idx;
+      s = j;
+    }
+    knns[s].similarity = similarity;
+    knns[s].idx = idx;
+  }
+
+  void top_init(knn_item_t * knns, size_t k) {
+    for (int i = k / 2 - 1; i >= 0; i--) {
+      heap_adjust(knns, i, k);
+    }
+  }
+
+  void top_collect(knn_item_t * knns, size_t k, long long idx, real similarity) {
+    if (similarity <= knns[0].similarity) return;
+    knns[0].similarity = similarity;
+    knns[0].idx = idx;
+    heap_adjust(knns, 0, k);
+  }
+
+  void top_sort(knn_item_t * knns, size_t k) {
+    real similarity;
+    long long idx;
+    for (int i = k - 1; i > 0; i--) {
+      similarity = knns[0].similarity;
+      idx = knns[0].idx;
+      knns[0].similarity = knns[i].similarity;
+      knns[0].idx = knns[i].idx;
+      knns[i].similarity = similarity;
+      knns[i].idx = idx;
+      heap_adjust(knns, 0, i);
+    }
+  }
+};
+
+using namespace doc2vec;
 
 static void * trainModelThread(void * params);
 
@@ -16,17 +61,12 @@ void * trainModelThread(void * params)
   return NULL;
 }
 
-/////==============================DOC2VEC========================
-Doc2Vec::Doc2Vec()
+Model::Model()
 {
   initExpTable();
 }
 
-Doc2Vec::~Doc2Vec()
-{
-}
-
-void Doc2Vec::initExpTable()
+void Model::initExpTable()
 {
   m_expTable = std::unique_ptr<real[]>(new real[EXP_TABLE_SIZE]);
 
@@ -37,7 +77,7 @@ void Doc2Vec::initExpTable()
   }
 }
 
-void Doc2Vec::initNegTable()
+void Model::initNegTable()
 {
   m_negative_sample_table = std::unique_ptr<int[]>(new int[negative_sample_table_size]);
 
@@ -57,7 +97,7 @@ void Doc2Vec::initNegTable()
   }
 }
 
-void Doc2Vec::train(const std::string & train_file,
+void Model::train(const std::string & train_file,
   size_t dim, bool cbow, bool hs, int negative,
   int iter, int window,
   real alpha, real sample,
@@ -102,7 +142,7 @@ void Doc2Vec::train(const std::string & train_file,
   m_wmd->train();
 }
 
-void Doc2Vec::initTrainModelThreads(const std::string & train_file, int threads, int iter, std::vector<TrainModelThread *> & trainModelThreads)
+void Model::initTrainModelThreads(const std::string & train_file, int threads, int iter, std::vector<TrainModelThread *> & trainModelThreads)
 {
   long long limit = m_doc_vocab->size() / threads;
   long long sub_size = 0;
@@ -129,7 +169,7 @@ void Doc2Vec::initTrainModelThreads(const std::string & train_file, int threads,
   fprintf(stderr, "corpus size: %lld\n", m_doc_vocab->size() - 1);
 }
 
-bool Doc2Vec::obj_knn_objs(const std::string & search, const real * src,
+bool Model::obj_knn_objs(const std::string & search, const real * src,
   bool search_is_word, bool target_is_word,
   knn_item_t * knns, size_t k)
 {
@@ -164,60 +204,60 @@ bool Doc2Vec::obj_knn_objs(const std::string & search, const real * src,
   return true;
 }
 
-bool Doc2Vec::word_knn_words(const std::string & search, knn_item_t * knns, size_t k)
+bool Model::word_knn_words(const std::string & search, knn_item_t * knns, size_t k)
 {
   return obj_knn_objs(search, NULL, true, true, knns, k);
 }
 
-bool Doc2Vec::doc_knn_docs(const std::string & search, knn_item_t * knns, size_t k)
+bool Model::doc_knn_docs(const std::string & search, knn_item_t * knns, size_t k)
 {
   return obj_knn_objs(search, NULL, false, false, knns, k);
 }
 
-bool Doc2Vec::word_knn_docs(const std::string & search, knn_item_t * knns, size_t k)
+bool Model::word_knn_docs(const std::string & search, knn_item_t * knns, size_t k)
 {
   return obj_knn_objs(search, NULL, true, false, knns, k);
 }
 
-void Doc2Vec::sent_knn_words(TaggedDocument & doc, knn_item_t * knns, size_t k)
+void Model::sent_knn_words(TaggedDocument & doc, knn_item_t * knns, size_t k)
 {
   std::unique_ptr<real[]> infer_vector(new real[m_nn->dim()]);  
   sent_knn_words(doc, knns, k, infer_vector.get());  
 }
 
-void Doc2Vec::sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, size_t k)
+void Model::sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, size_t k)
 {
   std::unique_ptr<real[]> infer_vector(new real[m_nn->dim()]);    
   sent_knn_docs(doc, knns, k, infer_vector.get());
 }
 
-void Doc2Vec::sent_knn_words(TaggedDocument & doc, knn_item_t * knns, size_t k, real * infer_vector)
+void Model::sent_knn_words(TaggedDocument & doc, knn_item_t * knns, size_t k, real * infer_vector)
 {
   infer_doc(doc, infer_vector);
   obj_knn_objs("", infer_vector, false, true, knns, k);
 }
 
-void Doc2Vec::sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, size_t k, real * infer_vector)
+void Model::sent_knn_docs(TaggedDocument & doc, knn_item_t * knns, size_t k, real * infer_vector)
 {
   infer_doc(doc, infer_vector);
   obj_knn_objs("", infer_vector, false, false, knns, k);
 }
 
-real Doc2Vec::similarity(const real * src, const real * target) const
+real Model::similarity(const real * src, const real * target) const
 {
   real dot = 0;
   for (size_t a = 0; a < m_nn->dim(); a++) dot += src[a] * target[a];
   return dot;
 }
 
-real Doc2Vec::distance(const real * src, const real * target) const
+real Model::distance(const real * src, const real * target) const
 {
   real dis = 0;
   for (size_t a = 0; a < m_nn->dim(); a++) dis += pow(src[a] - target[a], 2);
   return sqrt(dis);
 }
 
-void Doc2Vec::infer_doc(TaggedDocument & doc, real * vec, int skip)
+void Model::infer_doc(TaggedDocument & doc, real * vec, int skip)
 {
   real len = 0;
   unsigned long long next_random = 1;
@@ -240,7 +280,7 @@ void Doc2Vec::infer_doc(TaggedDocument & doc, real * vec, int skip)
   for(long long a = 0; a < m_nn->dim(); a++) vec[a] /= len;
 }
 
-real Doc2Vec::doc_likelihood(TaggedDocument & doc, int skip)
+real Model::doc_likelihood(TaggedDocument & doc, int skip)
 {
   if(!m_hs){
     return 0;
@@ -250,7 +290,7 @@ real Doc2Vec::doc_likelihood(TaggedDocument & doc, int skip)
   return trainThread.doc_likelihood();
 }
 
-real Doc2Vec::context_likelihood(TaggedDocument & doc, int sentence_position)
+real Model::context_likelihood(TaggedDocument & doc, int sentence_position)
 {
   if(!m_hs){
     return 0;
@@ -272,7 +312,7 @@ real Doc2Vec::context_likelihood(TaggedDocument & doc, int sentence_position)
   return trainThread.context_likelihood(sent_pos);
 }
 
-void Doc2Vec::save(FILE * fout) const
+void Model::save(FILE * fout) const
 {
   m_word_vocab->save(fout);
   m_doc_vocab->save(fout);
@@ -290,7 +330,7 @@ void Doc2Vec::save(FILE * fout) const
   m_wmd->save(fout);
 }
 
-void Doc2Vec::load(FILE * fin)
+void Model::load(FILE * fin)
 {
   m_word_vocab = std::make_unique<Vocabulary>();
   m_word_vocab->load(fin);
@@ -320,51 +360,4 @@ void Doc2Vec::load(FILE * fin)
   m_wmd->load(fin);
 }
 
-size_t Doc2Vec::dim() const { return m_nn->dim(); }
-
-/////==============================DOC2VEC end========================
-
-static void heap_adjust(knn_item_t * knns, int s, int m)
-{
-  real similarity = knns[s].similarity;
-  long long idx = knns[s].idx;
-  for(int j = 2 * s + 1; j < m; j = 2 * j + 1) {
-    if(j < m - 1 && knns[j].similarity > knns[j + 1].similarity) j++;
-    if(similarity < knns[j].similarity) break;
-    knns[s].similarity = knns[j].similarity;
-    knns[s].idx = knns[j].idx;
-    s = j;
-  }
-  knns[s].similarity = similarity;
-  knns[s].idx = idx;
-}
-
-void top_init(knn_item_t * knns, size_t k)
-{
-  for(int i = k / 2 - 1; i >= 0; i--) {
-    heap_adjust(knns, i, k);
-  }
-}
-
-void top_collect(knn_item_t * knns, size_t k, long long idx, real similarity)
-{
-  if(similarity <= knns[0].similarity) return;
-  knns[0].similarity = similarity;
-  knns[0].idx = idx;
-  heap_adjust(knns, 0, k);
-}
-
-void top_sort(knn_item_t * knns, size_t k)
-{
-  real similarity;
-  long long idx;
-  for(int i = k - 1; i > 0; i--) {
-    similarity = knns[0].similarity;
-    idx = knns[0].idx;
-    knns[0].similarity = knns[i].similarity;
-    knns[0].idx = knns[i].idx;
-    knns[i].similarity = similarity;
-    knns[i].idx = idx;
-    heap_adjust(knns, 0, i);
-  }
-}
+size_t Model::dim() const { return m_nn->dim(); }

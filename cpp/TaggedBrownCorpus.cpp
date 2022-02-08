@@ -1,16 +1,17 @@
 #include "TaggedBrownCorpus.h"
 #include "Vocabulary.h"
 #include "NN.h"
-#include "Doc2Vec.h"
+#include "Model.h"
 
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
 #include <cmath>
 
-//=======================TaggedBrownCorpus=======================
-TaggedBrownCorpus::TaggedBrownCorpus(const std::string & train_file, long long seek, long long limit_doc):
-  m_seek(seek), m_doc_num(0), m_limit_doc(limit_doc)
+using namespace doc2vec;
+
+TaggedBrownCorpus::TaggedBrownCorpus(const std::string & train_file, long long seek, long long limit_doc)
+  : m_seek(seek), m_doc_num(0), m_limit_doc(limit_doc)
 {
   m_fin = fopen(train_file.c_str(), "rb");
   if (m_fin == NULL)
@@ -23,7 +24,7 @@ TaggedBrownCorpus::TaggedBrownCorpus(const std::string & train_file, long long s
 
 TaggedBrownCorpus::~TaggedBrownCorpus()
 {
-  if(m_fin != NULL) fclose(m_fin);
+  if (m_fin != NULL) fclose(m_fin);
   m_fin = NULL;
 }
 
@@ -35,14 +36,12 @@ void TaggedBrownCorpus::rewind()
 
 TaggedDocument * TaggedBrownCorpus::next()
 {
-  if(feof(m_fin) || (m_limit_doc >= 0 && m_doc_num >= m_limit_doc))
-  {
+  if (feof(m_fin) || (m_limit_doc >= 0 && m_doc_num >= m_limit_doc)) {
     return NULL;
   }
   m_doc.clear();
   readWord(m_doc.m_tag);
-  while ( !feof(m_fin) )
-  {   
+  while ( !feof(m_fin) ) {   
     std::string word;
     auto r = readWord(word);
     m_doc.m_words.push_back(word);
@@ -55,13 +54,12 @@ TaggedDocument * TaggedBrownCorpus::next()
 
 // Reads a single word from a file, assuming space + tab + EOL to be word boundaries
 // paading </s> to the EOL
-//return 0 : word, return -1: EOL
+// return 0 : word, return -1: EOL
 int TaggedBrownCorpus::readWord(std::string & word)
 {
   word.clear();
   int a = 0, ch;  
-  while ( 1 )
-  {
+  while ( 1 ) {
     ch = fgetc(m_fin);
     if (feof(m_fin)) {
       if (a > 0) return 0;
@@ -87,12 +85,10 @@ int TaggedBrownCorpus::readWord(std::string & word)
   return 0;
 }
 
-// //////////////UnWeightedDocument/////////////////////////////
-UnWeightedDocument::UnWeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc)
+UnWeightedDocument::UnWeightedDocument(Model * doc2vec, TaggedDocument * doc)
 {
   std::unordered_set<long long> dict;
-  for(size_t a = 0; a < doc->m_words.size(); a++)
-  {
+  for (size_t a = 0; a < doc->m_words.size(); a++) {
     auto & word = doc->m_words[a];
     auto word_idx = doc2vec->wvocab().searchVocab(word);
     if (word_idx == -1) continue;
@@ -124,17 +120,15 @@ void UnWeightedDocument::load(FILE * fin)
   }
 }
 
-// //////////////WeightedDocument/////////////////////////////
-WeightedDocument::WeightedDocument(Doc2Vec * doc2vec, TaggedDocument * doc):
-  UnWeightedDocument(doc2vec, doc)
+WeightedDocument::WeightedDocument(Model * doc2vec, TaggedDocument * doc)
+  : UnWeightedDocument(doc2vec, doc)
 {
   long long word_idx;
   std::unordered_map<long long, real> scores;
   std::unique_ptr<real[]> doc_vector(new real[doc2vec->nn().dim()]);
   std::unique_ptr<real[]> infer_vector(new real[doc2vec->nn().dim()]);
   doc2vec->infer_doc(*doc, doc_vector.get());
-  for(size_t a = 0; a < doc->m_words.size(); a++)
-  {
+  for (size_t a = 0; a < doc->m_words.size(); a++) {
     auto & word = doc->m_words[a];
     word_idx = doc2vec->wvocab().searchVocab(word);
     if (word_idx == -1) continue;

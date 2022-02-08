@@ -3,9 +3,11 @@
 #include <cmath>
 #include <algorithm>
 
-NN::NN(size_t vocab_size, size_t corpus_size, size_t dim, bool hs, int negative):
-  m_hs(hs), m_negative(negative),
-  m_vocab_size(vocab_size), m_corpus_size(corpus_size), m_dim(dim)
+using namespace doc2vec;
+
+NN::NN(size_t vocab_size, size_t corpus_size, size_t dim, bool hs, int negative)
+  : m_hs(hs), m_negative(negative),
+    m_vocab_size(vocab_size), m_corpus_size(corpus_size), m_dim(dim)
 {
   unsigned long long next_random = 1;
   

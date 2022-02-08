@@ -1,12 +1,14 @@
 #include "TrainModelThread.h"
-#include "Doc2Vec.h"
+#include "Model.h"
 #include "TaggedBrownCorpus.h"
 #include "Vocabulary.h"
 #include "NN.h"
 
 #include <cmath>
 
-TrainModelThread::TrainModelThread(long long id, Doc2Vec * doc2vec,
+using namespace doc2vec;
+
+TrainModelThread::TrainModelThread(long long id, Model * doc2vec,
 				   std::unique_ptr<TaggedBrownCorpus> sub_corpus, bool infer)
   : m_id(id), m_doc2vec(doc2vec), m_corpus(std::move(sub_corpus)), m_infer(infer)
 {
