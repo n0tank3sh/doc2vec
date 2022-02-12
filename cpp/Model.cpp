@@ -1,9 +1,6 @@
 #include "Model.h"
-#include "NN.h"
-#include "Vocabulary.h"
-#include "WMD.h"
 #include "TrainModelThread.h"
-#include "TaggedBrownCorpus.h"
+#include "Input.h"
 
 #include <cmath>
 
@@ -97,13 +94,13 @@ void Model::initNegTable()
   }
 }
 
-void Model::train(const std::string & train_file,
+void Model::train(Input & train_file,
   size_t dim, bool cbow, bool hs, int negative,
   int iter, int window,
   real alpha, real sample,
   int min_count, int threads)
 {
-  fprintf(stderr, "Starting training using file %s\n", train_file.c_str());
+  fprintf(stderr, "Starting training\n");
   m_cbow = cbow;
   m_hs = hs;
   m_negative = negative;
@@ -116,6 +113,8 @@ void Model::train(const std::string & train_file,
   m_doc_vocab = std::make_unique<Vocabulary>(train_file, 1, true);
   m_nn = std::make_unique<NN>(m_word_vocab->size(), m_doc_vocab->size(), dim, hs, negative);
   if (m_negative > 0) initNegTable();
+
+  fprintf(stderr, "word vocab: %d, doc vocab: %d\n", int(m_word_vocab->size()), int(m_doc_vocab->size()));
   
   m_brown_corpus = std::make_unique<TaggedBrownCorpus>(train_file);
   m_alpha = alpha;
@@ -142,7 +141,7 @@ void Model::train(const std::string & train_file,
   m_wmd->train();
 }
 
-void Model::initTrainModelThreads(const std::string & train_file, int threads, int iter, std::vector<TrainModelThread *> & trainModelThreads)
+void Model::initTrainModelThreads(Input & train_file, int threads, int iter, std::vector<TrainModelThread *> & trainModelThreads)
 {
   long long limit = m_doc_vocab->size() / threads;
   long long sub_size = 0;

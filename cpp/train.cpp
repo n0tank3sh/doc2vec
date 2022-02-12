@@ -1,5 +1,6 @@
 #include "common_define.h"
 #include "Model.h"
+#include "Input.h"
 
 #include <cstring>
 
@@ -99,8 +100,10 @@ int main(int argc, char **argv)
     return 1;
   }
 
+  FileInput input(train_file);
+  
   Model doc2vec;
-  doc2vec.train(train_file, dim, cbow, hs, negative, iter, window, alpha, sample, min_count, num_threads);
+  doc2vec.train(input, dim, cbow, hs, negative, iter, window, alpha, sample, min_count, num_threads);
   fprintf(stderr, "\nWrite model to %s\n", output_file.c_str());
   doc2vec.save(fout);
   fclose(fout);

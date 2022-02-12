@@ -14,11 +14,7 @@
 
 namespace doc2vec {
   class TrainModelThread;
-  class NN;
-  class Vocabulary;
-  class WMD;
-  class TaggedBrownCorpus;
-  class TaggedDocument;
+  class Input;
   
   struct knn_item_t;
 
@@ -27,7 +23,7 @@ namespace doc2vec {
   public:
     Model();
   
-    void train(const std::string & train_file,
+    void train(Input & train_file,
 	       size_t dim, bool cbow, bool hs, int negative,
 	       int iter, int window,
 	       real alpha, real sample,
@@ -71,7 +67,7 @@ namespace doc2vec {
   private:
     void initExpTable();
     void initNegTable();
-    void initTrainModelThreads(const std::string & train_file, int threads, int iter, std::vector<TrainModelThread *> & trainModelThreads);
+    void initTrainModelThreads(Input & train_file, int threads, int iter, std::vector<TrainModelThread *> & trainModelThreads);
     bool obj_knn_objs(const std::string & search, const real * src,
 		      bool search_is_word, bool target_is_word,
 		      knn_item_t * knns, size_t k);

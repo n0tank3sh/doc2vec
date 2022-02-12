@@ -10,79 +10,31 @@
 
 using namespace doc2vec;
 
-TaggedBrownCorpus::TaggedBrownCorpus(const std::string & train_file, long long seek, long long limit_doc)
-  : m_seek(seek), m_doc_num(0), m_limit_doc(limit_doc)
+TaggedBrownCorpus::TaggedBrownCorpus(Input & train_file, long long seek, long long limit_doc)
+  : m_seek(seek), m_doc_num(0), m_limit_doc(limit_doc), m_train_file(train_file.copy())
 {
-  m_fin = fopen(train_file.c_str(), "rb");
-  if (m_fin == NULL)
-  {
-    fprintf(stderr, "ERROR: training data file not found!\n");
-    exit(1);
-  }
-  fseek(m_fin, m_seek, SEEK_SET);
+  m_train_file->seek(m_seek);
 }
 
-TaggedBrownCorpus::~TaggedBrownCorpus()
-{
-  if (m_fin != NULL) fclose(m_fin);
-  m_fin = NULL;
-}
-
-void TaggedBrownCorpus::rewind()
-{
-  fseek(m_fin, m_seek, SEEK_SET);
+void TaggedBrownCorpus::rewind() {
+  m_train_file->seek(m_seek);
   m_doc_num = 0;
 }
 
 TaggedDocument * TaggedBrownCorpus::next()
 {
-  if (feof(m_fin) || (m_limit_doc >= 0 && m_doc_num >= m_limit_doc)) {
+  if (m_train_file->eof() || (m_limit_doc >= 0 && m_doc_num >= m_limit_doc)) {
     return NULL;
   }
   m_doc.clear();
-  readWord(m_doc.m_tag);
-  while ( !feof(m_fin) ) {   
-    std::string word;
-    auto r = readWord(word);
-    m_doc.m_words.push_back(word);
-    
-    if (r == -1) break;
+  auto line = m_train_file->get_line();
+  if (line.empty()) return NULL;
+  m_doc.m_tag = line[0];
+  for (size_t i = 1; i < line.size(); i++) {
+    m_doc.m_words.push_back(line[i]);
   }
   m_doc_num++;
   return &m_doc;
-}
-
-// Reads a single word from a file, assuming space + tab + EOL to be word boundaries
-// paading </s> to the EOL
-// return 0 : word, return -1: EOL
-int TaggedBrownCorpus::readWord(std::string & word)
-{
-  word.clear();
-  int a = 0, ch;  
-  while ( 1 ) {
-    ch = fgetc(m_fin);
-    if (feof(m_fin)) {
-      if (a > 0) return 0;
-      return -1;
-    }
-    if (ch == 13) continue;
-    if ((ch == ' ') || (ch == '\t') || (ch == '\n'))
-    {
-      if (a > 0)
-      {
-        if (ch == '\n') ungetc(ch, m_fin);
-        break;
-      }
-      if (ch == '\n')
-      {
-        word = "</s>";
-        return -1;
-      } else continue;
-    }
-    word += ch;
-    a++;
-  }
-  return 0;
 }
 
 UnWeightedDocument::UnWeightedDocument(Model * doc2vec, TaggedDocument * doc)

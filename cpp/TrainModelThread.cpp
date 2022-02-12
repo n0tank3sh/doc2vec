@@ -69,15 +69,16 @@ void TrainModelThread::buildDocument(TaggedDocument & doc, int skip)
   m_sen.clear();
   m_sen_nosample.clear();
   auto & words = m_doc2vec->wvocab().getWords();
-  for(size_t i = 0; i < doc.m_words.size(); i++) if((ssize_t)i != skip)
-  {
-    long long word_idx = m_doc2vec->wvocab().searchVocab(doc.m_words[i]);
-    if (word_idx == -1) continue;
-    if (word_idx == 0) break;
-    m_word_count++;
-    m_sen_nosample.push_back(word_idx);
-    if (!down_sample(words[word_idx].cn)) {
-      m_sen.push_back(word_idx);
+  for (size_t i = 0; i < doc.m_words.size(); i++) {
+    if ((ssize_t)i != skip) {
+      long long word_idx = m_doc2vec->wvocab().searchVocab(doc.m_words[i]);
+      if (word_idx == -1) continue;
+      if (word_idx == 0) break;
+      m_word_count++;
+      m_sen_nosample.push_back(word_idx);
+      if (!down_sample(words[word_idx].cn)) {
+	m_sen.push_back(word_idx);
+      }
     }
   }
 }

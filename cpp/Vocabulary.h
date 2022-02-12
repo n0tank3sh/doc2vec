@@ -9,6 +9,8 @@
 #include <cstring>
 
 namespace doc2vec {
+  class Input;
+  
   struct vocab_word_t {
     vocab_word_t() : cn(0), codelen(0), point(0), code(0) { }
     vocab_word_t(const std::string & _word, size_t _cn = 1) : word(_word), cn(_cn), codelen(0), point(0), code(0) { }
@@ -49,7 +51,7 @@ namespace doc2vec {
   class Vocabulary {
   public:
     Vocabulary() : m_min_count(1), m_doctag(false) { }
-    Vocabulary(const std::string & train_file, int min_count = 5, bool doctag = false);
+    Vocabulary(Input & train_file, int min_count = 5, bool doctag = false);
 
     long long searchVocab(const std::string & word) const;
     long long getVocabSize() const { return m_vocab.size(); }
@@ -61,7 +63,7 @@ namespace doc2vec {
     const std::vector<vocab_word_t> & getWords() const { return m_vocab; }
 
   private:
-    void loadFromTrainFile(const std::string & train_file);
+    void loadFromTrainFile(Input & train_file);
     void addWordToVocab(const std::string & word, size_t initial_count = 1);
     void sortVocab();
     void createHuffmanTree();

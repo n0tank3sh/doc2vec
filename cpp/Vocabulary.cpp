@@ -13,7 +13,7 @@ static inline bool vocabCompare(const vocab_word_t & a, const vocab_word_t & b)
     return a.cn > b.cn;
 }
 
-Vocabulary::Vocabulary(const std::string & train_file, int min_count, bool doctag)
+Vocabulary::Vocabulary(Input & train_file, int min_count, bool doctag)
   : m_min_count(min_count), m_doctag(doctag)
 {
   if(m_doctag) m_min_count = 1;
@@ -29,8 +29,7 @@ long long Vocabulary::searchVocab(const std::string & word) const
   else return -1;
 }
 
-void Vocabulary::loadFromTrainFile(const std::string & train_file)
-{
+void Vocabulary::loadFromTrainFile(Input & train_file) {
   TaggedBrownCorpus corpus(train_file);
   m_vocab.clear();
   m_vocab_hash.clear();
@@ -41,7 +40,10 @@ void Vocabulary::loadFromTrainFile(const std::string & train_file)
       auto & word = doc->m_tag;
       m_train_words++;
       long long i = searchVocab(word);
-      if (i == -1) addWordToVocab(word);
+      if (i == -1) {
+	fprintf(stderr, "adding doc: %s\n", word.c_str());
+	addWordToVocab(word);
+      }
     } else { // for doc words
       for(size_t k = 0; k < doc->m_words.size(); k++){
         auto & word = doc->m_words[k];

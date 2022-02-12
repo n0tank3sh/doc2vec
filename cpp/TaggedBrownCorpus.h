@@ -1,6 +1,7 @@
 #ifndef _DOC2VEC_TAGGEDBROWNCORPUS_H_
 #define _DOC2VEC_TAGGEDBROWNCORPUS_H_
 
+#include "Input.h"
 #include "common_define.h"
 
 #include <string>
@@ -26,23 +27,19 @@ namespace doc2vec {
   
   class TaggedBrownCorpus {
   public:
-    TaggedBrownCorpus(const std::string & train_file, long long seek = 0, long long limit_doc = -1);
-    ~TaggedBrownCorpus();
+    TaggedBrownCorpus(Input & train_file, long long seek = 0, long long limit_doc = -1);
 
     TaggedDocument * next();
     void rewind();
-    long long getDocNum() const {return m_doc_num;}
-    long long tell() {return ftello(m_fin);}
-    void close() {fclose(m_fin);m_fin=NULL;}
+    long long tell() { return m_train_file->tell(); }
+    long long getDocNum() const { return m_doc_num; }
 
   private:
-    int readWord(std::string & word);
-
-    FILE* m_fin;
     TaggedDocument m_doc;
     long long m_seek;
     long long m_doc_num;
     long long m_limit_doc;
+    std::unique_ptr<Input> m_train_file;
   };
 
   class UnWeightedDocument {
