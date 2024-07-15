@@ -1,5 +1,2 @@
-# C++
-cpp/*.o
-
-# binaries
-cpp/train
+#build
+build/

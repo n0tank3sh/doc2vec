@@ -1,13 +1,15 @@
 #include <limits>
 #include <stdarg.h>
 #include "gtest/gtest.h"
-#include "Doc2Vec.h"
-#include "WMD.h"
-#include "TaggedBrownCorpus.h"
-#include "common_define.h"
+#include <Model.h>
+#include <WMD.h>
+#include <TaggedBrownCorpus.h>
+#include <common_define.h>
 
 
 #define K 10
+
+using namespace doc2vec;
 static void buildDoc(TaggedDocument * doc, ...);
 
 class TestSimilar: public ::testing::Test{
@@ -30,11 +32,11 @@ public:
   }
 
 public:
-  static Doc2Vec doc2vec;
+  static Model doc2vec;
   static TaggedDocument doc;
   static knn_item_t knn_items[K];
 };
-Doc2Vec TestSimilar::doc2vec;
+Model TestSimilar::doc2vec;
 TaggedDocument TestSimilar::doc;
 knn_item_t TestSimilar::knn_items[K];
 
@@ -86,25 +88,25 @@ TEST_F(TestSimilar, sent_to_doc) {
 
 TEST_F(TestSimilar, wmd) {
   buildDoc(&doc, "遥感信息", "发展战略", "与", "对策", "</s>");
-  doc2vec.wmd()->sent_knn_docs_ex(doc, knn_items, K);
+  doc2vec.wmd().sent_knn_docs_ex(doc, knn_items, K);
   print_knns("遥感信息发展战略与对策");
 
   buildDoc(&doc, "遥感信息", "水文", "动态", "模拟", "中", "应用", "</s>");
-  doc2vec.wmd()->sent_knn_docs_ex(doc, knn_items, K);
+  doc2vec.wmd().sent_knn_docs_ex(doc, knn_items, K);
   print_knns("遥感信息水文动态模拟中应用");
 
   buildDoc(&doc, "反求工程", "cad", "建模", "技术", "研究", "</s>");
-  doc2vec.wmd()->sent_knn_docs_ex(doc, knn_items, K);
+  doc2vec.wmd().sent_knn_docs_ex(doc, knn_items, K);
   print_knns("反求工程CAD建模技术研究");
 }
 
 void buildDoc(TaggedDocument * doc, ...)
 {
-  doc.clear();
+  doc->clear();
   
   va_list pArg;
   va_start(pArg, doc);
-  for(int i = 0; i < doc->m_word_num; i++){
+  for(int i = 0; i < doc->m_words.size(); i++){
     doc->addWord(va_arg(pArg, char*));
   }
   va_end(pArg);

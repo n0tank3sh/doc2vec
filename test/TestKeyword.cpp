@@ -1,11 +1,13 @@
 #include <limits>
 #include <stdarg.h>
 #include "gtest/gtest.h"
-#include "Doc2Vec.h"
-#include "TaggedBrownCorpus.h"
-#include "common_define.h"
-#include "NN.h"
-#include "Vocab.h"
+#include <Model.h>
+#include <TaggedBrownCorpus.h>
+#include <common_define.h>
+#include <NN.h>
+#include <Vocabulary.h>
+
+using namespace doc2vec;
 
 static int compare(const void *a,const void *b);
 static void buildDoc(TaggedDocument * doc, ...);
