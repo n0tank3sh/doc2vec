@@ -8,6 +8,6 @@ set(SRC
   )
 
 add_library(libdoc2vec ${SRC})
-target_include_directories(libdoc2vec PUBLIC ${CMAKE_SOURCE_DIR}/include/)
+target_include_directories(libdoc2vec PUBLIC ../include/)
 add_executable(train "train.cpp")
 target_link_libraries(train libdoc2vec)
