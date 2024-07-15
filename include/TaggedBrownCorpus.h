@@ -1,8 +1,8 @@
 #ifndef _DOC2VEC_TAGGEDBROWNCORPUS_H_
 #define _DOC2VEC_TAGGEDBROWNCORPUS_H_
 
-#include "Input.h"
-#include "common_define.h"
+#include <Input.h>
+#include <common_define.h>
 
 #include <string>
 #include <vector>

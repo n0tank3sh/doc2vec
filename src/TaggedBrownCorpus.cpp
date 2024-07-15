@@ -1,7 +1,7 @@
-#include "TaggedBrownCorpus.h"
-#include "Vocabulary.h"
-#include "NN.h"
-#include "Model.h"
+#include <TaggedBrownCorpus.h>
+#include <Vocabulary.h>
+#include <NN.h>
+#include <Model.h>
 
 #include <unordered_set>
 #include <unordered_map>

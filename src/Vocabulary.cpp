@@ -1,5 +1,5 @@
-#include "Vocabulary.h"
-#include "TaggedBrownCorpus.h"
+#include <Vocabulary.h>
+#include <TaggedBrownCorpus.h>
 
 #include <cassert>
 #include <cstring>

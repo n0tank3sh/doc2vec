@@ -1,6 +1,6 @@
-#include "Model.h"
-#include "TrainModelThread.h"
-#include "Input.h"
+#include <Model.h>
+#include <TrainModelThread.h>
+#include <Input.h>
 
 #include <cmath>
 

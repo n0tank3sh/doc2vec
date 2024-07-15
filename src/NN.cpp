@@ -1,4 +1,4 @@
-#include "NN.h"
+#include <NN.h>
 
 #include <cmath>
 #include <algorithm>

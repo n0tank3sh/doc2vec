@@ -1,8 +1,8 @@
-#include "WMD.h"
-#include "TaggedBrownCorpus.h"
-#include "Vocabulary.h"
-#include "NN.h"
-#include "Model.h"
+#include <WMD.h>
+#include <TaggedBrownCorpus.h>
+#include <Vocabulary.h>
+#include <NN.h>
+#include <Model.h>
 
 using namespace doc2vec;
 

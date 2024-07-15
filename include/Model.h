@@ -1,12 +1,12 @@
 #ifndef _DOC2VEC_MODEL_H_
 #define _DOC2VEC_MODEL_H_
 
-#include "Vocabulary.h"
-#include "NN.h"
-#include "WMD.h"
-#include "TaggedBrownCorpus.h"
+#include <Vocabulary.h>
+#include <NN.h>
+#include <WMD.h>
+#include <TaggedBrownCorpus.h>
 
-#include "common_define.h"
+#include <common_define.h>
 
 #include <vector>
 #include <string>

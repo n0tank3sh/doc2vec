@@ -1,8 +1,8 @@
-#include "TrainModelThread.h"
-#include "Model.h"
-#include "TaggedBrownCorpus.h"
-#include "Vocabulary.h"
-#include "NN.h"
+#include <TrainModelThread.h>
+#include <Model.h>
+#include <TaggedBrownCorpus.h>
+#include <Vocabulary.h>
+#include <NN.h>
 
 #include <cmath>
 

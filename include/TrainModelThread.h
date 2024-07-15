@@ -1,7 +1,7 @@
 #ifndef _DOC2VEC_TRAINMODELTHREAD_H_
 #define _DOC2VEC_TRAINMODELTHREAD_H_
 
-#include "common_define.h"
+#include <common_define.h>
 
 #include <vector>
 #include <ctime>
